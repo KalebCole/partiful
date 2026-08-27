@@ -54,14 +54,14 @@ class MergeGateHardeningTests(unittest.TestCase):
                 return ""
             raise AssertionError(command)
 
-        contract = {"paths": ["internal/app/**"], "required_checks": [], "verification": ["verify-local"]}
+        contract = {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["verify-local"]}
         with patch.object(gate, "_run", run), patch.object(gate, "checkout_verified_pr_head", return_value=SHA), patch.object(gate, "load_issue_contract", return_value=contract):
             self.assertNotEqual(0, gate.main(["--issue", "34", "--pr", "49", "--reviewed-sha", SHA]))
         self.assertEqual(2, sum(call[:3] == ["gh", "pr", "view"] for call in calls))
         self.assertEqual([], [call for call in calls if call[:3] == ["gh", "pr", "merge"]])
 
     def test_latest_structured_review_request_changes_beats_older_approval(self) -> None:
-        packet = gate._packet(34, 49, SHA, lambda command: json.dumps(pr_view(SHA)) if command[:3] == ["gh", "pr", "view"] else json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}}) if command[:3] == ["gh", "api", "graphql"] else json.dumps([{"body": review("APPROVE")}, {"body": review("REQUEST_CHANGES")}]), {"paths": ["internal/app/**"], "required_checks": [], "verification": ["go test ./..."]})
+        packet = gate._packet(34, 49, SHA, lambda command: json.dumps(pr_view(SHA)) if command[:3] == ["gh", "pr", "view"] else json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}}) if command[:3] == ["gh", "api", "graphql"] else json.dumps([{"body": review("APPROVE")}, {"body": review("REQUEST_CHANGES")}]), {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["go test ./..."]})
         self.assertEqual("REQUEST_CHANGES", packet["latest_review"]["verdict"])
         self.assertEqual(set(CATEGORIES), set(packet["latest_review"]["categories"]))
         self.assertFalse(gate.validate_gate(packet)["ok"])
@@ -76,8 +76,8 @@ class MergeGateHardeningTests(unittest.TestCase):
             "allowed_paths": ["internal/app/**"],
             "excluded_paths": [],
             "blockers": [],
-            "required_checks_declared": True,
             "required_checks": ["unit"],
+            "no_required_ci": False,
             "checks": [{"context": "unrelated", "state": "SUCCESS"}],
             "review_cycles": 1,
         }

@@ -22,16 +22,18 @@ def validate_gate(p:dict)->dict:
   if any(_overlap(path,x) for x in p.get("excluded_paths",[])):fail("out_of_write_set",path)
   elif not any(_overlap(path,x) for x in p.get("allowed_paths",[])):fail("out_of_write_set",path)
  if any(x.get("state")=="OPEN" for x in p.get("blockers",[])):fail("open_blocker","issue has an open blocker")
- checks=p.get("checks",[])
- if p.get("required_checks_declared",True):
+ checks=p.get("checks",[]); required=p.get("required_checks",[]); no_required_ci=p.get("no_required_ci")
+ if (bool(required) and no_required_ci is True) or (not required and no_required_ci is not True):
+  fail("ambiguous_ci_contract","declare nonempty required_checks or no_required_ci=true, never both")
+ elif required:
   if not checks:fail("missing_required_checks","required check contexts must exist")
   by_context={x.get("context"):x for x in checks if x.get("context")}
-  for context in p.get("required_checks",[]):
+  for context in required:
    if context not in by_context:fail("missing_required_check",context)
    elif by_context[context].get("state")!="SUCCESS":fail("required_check_not_success",context)
   for x in checks:
    if not x.get("context") or x.get("state")!="SUCCESS":fail("required_check_not_success",str(x.get("context","missing")))
- elif not p.get("local_verification_ran"):fail("missing_local_verification","no required CI declaration requires local commands")
+ elif not p.get("local_verification_ran"):fail("missing_local_verification","explicit no-required-CI declaration requires local commands")
  if p.get("review_cycles",0)>3:fail("too_many_review_cycles","more than three review cycles")
  return {"ok":not f,"failures":f}
 def split_verification_command(command:str)->list[str]:return shlex.split(command)
@@ -49,7 +51,7 @@ def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],cont
  get=lambda pat:(re.search(pat,body,re.M).group(1) if re.search(pat,body,re.M) else None)
  cats={c:get(rf"^Category-{c}:\s*(PASS|FAIL)\s*$") for c in CATEGORIES}
  checks=[{"context":x.get("name") or x.get("context"),"state":x.get("conclusion") or x.get("status")} for x in view.get("statusCheckRollup",[])]
- return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"required_checks_declared":bool(contract.get("required_checks")),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
+ return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"no_required_ci":contract.get("no_required_ci"),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser();p.add_argument("--issue",type=int,required=True);p.add_argument("--pr",type=int,required=True);p.add_argument("--reviewed-sha",required=True);a=p.parse_args(argv)
  try:

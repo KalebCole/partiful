@@ -17,7 +17,7 @@ CATEGORIES = ["specification", "correctness", "domain_model", "test_quality", "e
 
 
 def clean_packet() -> dict:
-    return {"head": SHA, "reviewed_sha": SHA, "paths": ["internal/app/a.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context": "test", "state": "SUCCESS"}], "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {x: "PASS" for x in CATEGORIES}}, "review_cycles": 3, "evidence": {"red": "go test ./... (expected fail)", "green": "go test ./..."}, "required_checks_declared": True}
+    return {"head": SHA, "reviewed_sha": SHA, "paths": ["internal/app/a.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context": "test", "state": "SUCCESS"}], "required_checks": ["test"], "no_required_ci": False, "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {x: "PASS" for x in CATEGORIES}}, "review_cycles": 3, "evidence": {"red": "go test ./... (expected fail)", "green": "go test ./..."}}
 
 
 class GateAcceptanceTests(unittest.TestCase):
@@ -35,11 +35,19 @@ class GateAcceptanceTests(unittest.TestCase):
                 packet = clean_packet(); packet.update(mutation)
                 self.assertFalse(gate.validate_gate(packet)["ok"])
 
-    def test_no_declared_ci_requires_local_commands(self) -> None:
-        packet = clean_packet(); packet.update({"required_checks_declared": False, "checks": [], "local_verification_ran": False})
+    def test_no_declared_ci_requires_explicit_exception_and_local_commands(self) -> None:
+        packet = clean_packet(); packet.update({"required_checks": [], "checks": [], "no_required_ci": True, "local_verification_ran": False})
         self.assertFalse(gate.validate_gate(packet)["ok"])
         packet["local_verification_ran"] = True
         self.assertTrue(gate.validate_gate(packet)["ok"])
+
+    def test_ci_contract_rejects_missing_or_ambiguous_declaration(self) -> None:
+        missing = clean_packet(); missing.update({"required_checks": [], "checks": [], "local_verification_ran": True}); missing.pop("no_required_ci")
+        ambiguous = clean_packet(); ambiguous["no_required_ci"] = True
+        for packet in (missing, ambiguous):
+            with self.subTest(packet=packet):
+                failures = gate.validate_gate(packet)["failures"]
+                self.assertIn("ambiguous_ci_contract", {failure["code"] for failure in failures})
 
     def test_success_re_reads_then_exact_checkout_then_merges_and_reads_back(self) -> None:
         calls: list[list[str]] = []
