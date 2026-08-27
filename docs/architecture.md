@@ -35,6 +35,14 @@ Partiful's backend authorization result is authoritative. A denied operation ret
 
 Application parity is not raw transport passthrough. Firebase metadata, transport identifiers, wrapper fields, and other response members that the Partiful application does not expose remain private adapter details.
 
+## Public contact references
+
+Contact discovery returns an opaque `contact_ref` beside each application's visible contact fields. Every contact-consuming CLI command and its paired MCP tool accept the same typed reference. A contact name may be used as a convenience only when it resolves to exactly one contact; an ambiguous name fails and returns the matching candidates with their references.
+
+A `contact_ref` is derived with a keyed, non-reversible function over the active account scope and private transport identity. The stable reference secret lives in the shared credential provider. References are bound to one account and installation; the public contract does not promise portability between installations.
+
+Reference resolution fetches the current accessible contact catalog and compares derived references. It does not require a local contact mapping database. A modified reference, a reference from another account, or a reference whose contact is no longer accessible fails as `invalid_contact_ref`. Raw Partiful, Firebase, and Firestore contact identifiers never enter the public result or input contract.
+
 ## Output contract
 
 Partiful follows gogcli's stdout-as-an-API model:
