@@ -371,7 +371,7 @@ MCP accepts `message` directly. Success:
 | --- | --- |
 | 0 | success |
 | 2 | `usage.invalid`, `input.invalid`, `match.ambiguous` |
-| 3 | `auth.required`, `auth.expired`, `auth.human_required` |
+| 3 | `auth.required`, `auth.expired`, `auth.human_required`, `auth.store_unavailable`, `auth.persistence_failed`, `auth.busy` |
 | 4 | `permission.denied` |
 | 5 | `resource.not_found` |
 | 6 | `state.conflict` |

@@ -100,6 +100,8 @@ There is no plan token, `--apply` phase, repeated approval payload, or separate 
 
 ## Authentication contract
 
+The normative authentication and credential lifecycle is defined in
+[`plans/2026-08-26-authentication-credential-lifecycle-design.md`](plans/2026-08-26-authentication-credential-lifecycle-design.md).
 The first release supports one active Partiful account. CLI and MCP use one credential provider:
 
 - OS credential storage by default;
