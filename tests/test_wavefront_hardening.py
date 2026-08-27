@@ -62,6 +62,33 @@ class MergeGateHardeningTests(unittest.TestCase):
         self.assertEqual(set(CATEGORIES), set(packet["latest_review"]["categories"]))
         self.assertFalse(gate.validate_gate(packet)["ok"])
 
+    def test_required_check_names_must_match_successful_contexts(self) -> None:
+        packet = {
+            "head": SHA,
+            "reviewed_sha": SHA,
+            "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {name: "PASS" for name in CATEGORIES}},
+            "evidence": {"red": "failed first", "green": "passed after fix"},
+            "paths": ["internal/app/a.go"],
+            "allowed_paths": ["internal/app/**"],
+            "excluded_paths": [],
+            "blockers": [],
+            "required_checks_declared": True,
+            "required_checks": ["unit"],
+            "checks": [{"context": "unrelated", "state": "SUCCESS"}],
+            "review_cycles": 1,
+        }
+        missing = gate.validate_gate(packet)
+        self.assertFalse(missing["ok"])
+        self.assertIn("missing_required_check", {failure["code"] for failure in missing["failures"]})
+        packet["checks"] = [{"context": "unit", "state": "SUCCESS"}]
+        self.assertTrue(gate.validate_gate(packet)["ok"])
+
+    def test_verification_command_parser_preserves_quoted_arguments(self) -> None:
+        self.assertEqual(
+            ["python3", "-m", "unittest", "discover", "-s", "scripts/tests", "-p", "test_*contract*.py", "-v"],
+            gate.split_verification_command("python3 -m unittest discover -s scripts/tests -p 'test_*contract*.py' -v"),
+        )
+
 
 class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
     def test_adoption_uses_exact_pr_sha_one_review_card_and_idempotent_rerun(self) -> None:

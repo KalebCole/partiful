@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed exact-SHA merge gate for a reviewed Partiful PR."""
 from __future__ import annotations
-import argparse,json,re,subprocess
+import argparse,json,re,shlex,subprocess
 from pathlib import Path
 from typing import Callable
 try: from scripts.select_implementation_wave import _overlap
@@ -25,11 +25,16 @@ def validate_gate(p:dict)->dict:
  checks=p.get("checks",[])
  if p.get("required_checks_declared",True):
   if not checks:fail("missing_required_checks","required check contexts must exist")
+  by_context={x.get("context"):x for x in checks if x.get("context")}
+  for context in p.get("required_checks",[]):
+   if context not in by_context:fail("missing_required_check",context)
+   elif by_context[context].get("state")!="SUCCESS":fail("required_check_not_success",context)
   for x in checks:
    if not x.get("context") or x.get("state")!="SUCCESS":fail("required_check_not_success",str(x.get("context","missing")))
  elif not p.get("local_verification_ran"):fail("missing_local_verification","no required CI declaration requires local commands")
  if p.get("review_cycles",0)>3:fail("too_many_review_cycles","more than three review cycles")
  return {"ok":not f,"failures":f}
+def split_verification_command(command:str)->list[str]:return shlex.split(command)
 def _run(c:list[str])->str:
  r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True)
  if r.returncode:raise RuntimeError(r.stderr.strip() or r.stdout.strip())
@@ -44,14 +49,14 @@ def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],cont
  get=lambda pat:(re.search(pat,body,re.M).group(1) if re.search(pat,body,re.M) else None)
  cats={c:get(rf"^Category-{c}:\s*(PASS|FAIL)\s*$") for c in CATEGORIES}
  checks=[{"context":x.get("name") or x.get("context"),"state":x.get("conclusion") or x.get("status")} for x in view.get("statusCheckRollup",[])]
- return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks_declared":bool(contract.get("required_checks")),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
+ return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"required_checks_declared":bool(contract.get("required_checks")),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser();p.add_argument("--issue",type=int,required=True);p.add_argument("--pr",type=int,required=True);p.add_argument("--reviewed-sha",required=True);a=p.parse_args(argv)
  try:
   contract=load_issue_contract(a.issue); packet=_packet(a.issue,a.pr,a.reviewed_sha,_run,contract);result=validate_gate(packet)
   if not result["ok"]:print(json.dumps(result,sort_keys=True));return 1
   if checkout_verified_pr_head(a.pr)!=a.reviewed_sha:raise RuntimeError("detached head drift")
-  for command in contract.get("verification",[]):_run(command.split())
+  for command in contract.get("verification",[]):_run(split_verification_command(command))
   # Re-read every mutable predicate immediately before merge.
   final=validate_gate(_packet(a.issue,a.pr,a.reviewed_sha,_run,contract))
   if not final["ok"]:print(json.dumps(final,sort_keys=True));return 1
