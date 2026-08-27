@@ -95,9 +95,12 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
         commands: list[list[str]] = []
         cards: dict[str, str] = {}
         state = {"status": "running"}
+        pr_sha = "c" * 40
 
         def run(command: list[str]) -> str:
             commands.append(command)
+            if command[:3] == ["gh", "pr", "view"]:
+                return json.dumps({"headRefOid": pr_sha, "headRefName": "partiful/issue-34-initial-implement"})
             if "create" in command:
                 key = command[command.index("--idempotency-key") + 1]
                 cards.setdefault(key, "card-34")
@@ -120,11 +123,11 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
         self.assertEqual(1, len(review_commands))
         for command in create_commands:
             self.assertIn("partiful:implementation:34", command)
-            self.assertIn(adopt.SHA, command[command.index("--body") + 1])
+            self.assertIn(pr_sha, command[command.index("--body") + 1])
             self.assertEqual("partiful-implementer", command[command.index("--assignee") + 1])
             self.assertEqual("running", command[command.index("--initial-status") + 1])
             self.assertEqual(
-                "partiful/issue-34",
+                "partiful/issue-34-initial-implement",
                 command[command.index("--branch") + 1],
             )
             self.assertIn("PR #49", command[command.index("--body") + 1])
@@ -136,7 +139,7 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
         command = review_commands[0]
         self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], command[:6])
         self.assertEqual("partiful-code-reviewer", command[command.index("--reviewer") + 1])
-        self.assertIn(adopt.SHA, command[command.index("--metadata") + 1])
+        self.assertIn(pr_sha, command[command.index("--metadata") + 1])
 
     def test_native_same_card_transitions_use_review_then_return_commands(self) -> None:
         commands: list[list[str]] = []
