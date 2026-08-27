@@ -181,39 +181,20 @@ The final partition ticket produces GitHub implementation issues for the same Pa
 - forbidden changes; and
 - independent-review acceptance.
 
-The implementation frontier pump turns every open, unblocked, unassigned `partiful:implementation` child issue into this dependency chain:
+The implementation frontier pump creates one durable same-card lifecycle, keyed `partiful:implementation:<issue>`, for every selected issue. It discovers live Kanban cards on every run, feeds their parsed GitHub `Allowed files:` write sets into deterministic wave selection, and never relies on caller-supplied active-card JSON. A crash rerun adopts the existing card instead of duplicating it.
 
-```text
-partiful-implementer (isolated worktree, strict TDD, opens PR)
-  -> partiful-code-reviewer (fresh context, exact-commit verdict)
-    -> partiful-integrator (merge or bounded revision chain)
-```
+## Single-card state machine
 
-The implementer never merges. The reviewer never edits file contents. Both reviewer and integrator use `scripts/checkout_verified_pr_head.py` to fetch the current PR ref, detach at GitHub's declared head SHA, and prove `HEAD` equality before checks. The integrator merges only an approved latest commit with successful verification and reads GitHub state back after every write. `REQUEST_CHANGES` creates a fresh implementation chain; the third failed review blocks rather than looping forever.
+`implementing -> native request-review -> reviewing -> APPROVE -> deterministic gate -> merged`, or `reviewing -> REQUEST_CHANGES -> same-card implementing`. The implementation card body contains phase-specific instructions for both roles. The implementer records Feature/Bug/Refactor RED then GREEN proof on public seams, exact paths, PR and handoff readback, and native-requests review from `partiful-code-reviewer`. The reviewer exact-SHA checks out the PR, evaluates all nine categories (specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, evidence_rigor), and posts a machine-parseable review naming the SHA and category verdicts. A request-change includes an evidence block and returns the same card to the implementer; three structural reviews is a hard block. There are no child review or integrator cards.
 
-Implementation profiles are fail-closed. Their enabled toolsets are exactly `terminal`, `file`, and `skills`; their profile `.env` files contain no service credentials; terminal environment passthrough and shell init files are empty; and host shell startup sourcing is disabled. `scripts/verify_implementation_worker_profiles.py` audits that state before the pump creates any implementation card. Browser, computer-control, web, messaging, delegation, cron, memory, and unrelated plugin capabilities are unavailable. No live Partiful mutation is permitted until a dedicated gated wrapper exists with an explicit approval artifact, auditable operation ID, cleanup, and read-back proof. Until then, any live-mutation acceptance step becomes `EVIDENCE_REQUIRED`. Sandcastle is not used.
+`APPROVE` invokes `scripts/deterministic_merge_gate.py`. It requires a nonempty exact 40-character reviewed SHA equal to current head and latest approval, all category PASS verdicts, recorded RED/GREEN evidence, exact write-set scope, no blockers, <=3 cycles, and declared required contexts all SUCCESS. A no-required-CI issue must explicitly say so and run its local commands. The gate detached-checks the exact head, executes issue-declared commands, re-reads head/checks/blockers/review immediately before squash merge, then reads PR `MERGED` and issue `CLOSED`. Drift fails closed. Rollback is GitHub revert plus a new issue/card, never history rewrite.
 
-## Operator commands
+## Evidence lane and safety
 
-Preview the current unclaimed frontier:
+Open, unassigned, unblocked #20-#26 and #28 `wayfinder:task` issues are schedulable solely from GitHub state. #27 and #29 are held naturally by native blockers. Evidence uses the dedicated `partiful-evidence` profile, permits only bounded credential-free public/repository investigation and a reviewed `unsupported` conclusion, and never credentials or live mutation. Implementer, reviewer, and evidence profiles are audited fail-closed for exactly terminal/file/skills, empty `.env`, `env_passthrough: []`, `shell_init_files: []`, and `auto_source_bashrc: false`.
 
-```bash
-python3 scripts/wayfinder_frontier_pump.py --dry-run
-python3 scripts/implementation_frontier_pump.py --dry-run
-```
+## Operator and scheduler procedures
 
-Queue the current frontier idempotently:
+Use `python3 scripts/run_frontier_pumps.py --quiet` for deterministic quiet composition of the decision, implementation, and evidence pumps. Child errors surface nonzero. The scheduler never merges: merge is triggered only by same-card reviewer approval.
 
-```bash
-python3 scripts/wayfinder_frontier_pump.py
-python3 scripts/implementation_frontier_pump.py
-```
-
-Queue a fresh revision chain for one ticket:
-
-```bash
-python3 scripts/wayfinder_frontier_pump.py --issue <number> --attempt <review-comment-id>
-python3 scripts/implementation_frontier_pump.py --issue <number> --attempt <review-comment-id>
-```
-
-The scheduled pump uses `--quiet`: success with no new frontier prints nothing; failures exit nonzero so Hermes cron alerts the owner.
+At the one-time #34 cutover, first fast-forward and push the reviewed migration to `main`. In the preserved PR #49 worktree, merge reviewed `main` into PR #49 branch `partiful/issue-34-initial-implement`, run the required tests, push that branch, and remove the archived worktree so the branch can be attached to the new card. Run `gh pr ready 49` and read the PR back to verify it is open and no longer draft. Then run `scripts/adopt_issue_34_pr49.py --apply`. The helper resolves the live PR head, branch, open state, and review readiness; it fails closed on branch or lifecycle drift and idempotently creates/adopts stable card `partiful:implementation:34` directly in review without rerunning implementation or spawning children. Re-running it while the card is already in review is a no-op.

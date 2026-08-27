@@ -1,363 +1,84 @@
 #!/usr/bin/env python3
-"""Queue implementation, independent review, and integration cards from map #8."""
-
+"""Idempotently create one conflict-free Partiful implementation card per issue."""
 from __future__ import annotations
-
-import argparse
-import json
-import re
-import subprocess
-import sys
+import argparse, json, os, re, subprocess, sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
-
-ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "KalebCole/partiful"
-MAP_ISSUE = 8
-BOARD = "partiful"
-WORKSPACE = f"worktree:{ROOT}"
-IMPLEMENTATION_LABEL = "partiful:implementation"
-
-GRAPHQL = """
-query($owner: String!, $name: String!, $number: Int!, $after: String) {
-  repository(owner: $owner, name: $name) {
-    issue(number: $number) {
-      subIssues(first: 100, after: $after) {
-        nodes {
-          number title state url
-          labels(first: 20) { nodes { name } }
-          assignees(first: 10) { nodes { login } }
-          blockedBy(first: 20) { nodes { number state } }
-        }
-        pageInfo { hasNextPage endCursor }
-      }
-    }
-  }
-}
-"""
-
-
+try: from scripts.select_implementation_wave import select_wave
+except ModuleNotFoundError: from select_implementation_wave import select_wave
+ROOT=Path(__file__).resolve().parents[1]; REPOSITORY,MAP_ISSUE,BOARD="KalebCole/partiful",8,"partiful"; IMPLEMENTATION_LABEL="partiful:implementation"; WORKSPACE=f"worktree:{ROOT}"
+GRAPHQL='''query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){subIssues(first:100){nodes{number title body state url labels(first:20){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number state}}}}}}}'''
 @dataclass(frozen=True)
 class Issue:
-    number: int
-    title: str
-    url: str
-    state: str
-    labels: tuple[str, ...]
-    assignees: tuple[str, ...]
-    blocked_by: tuple[tuple[int, str], ...]
+ number:int; title:str; url:str; state:str; labels:tuple[str,...]; assignees:tuple[str,...]; blocked_by:tuple[tuple[int,str],...]; allowed_paths:tuple[str,...]=()
+def parse_allowed_files(body:str)->tuple[str,...]:
+ match=re.search(r"(?ims)^Allowed files:\s*(.*?)(?=^\s*(?:##|Applicable |Native |Shared |Forbidden:)|\Z)",body)
+ return tuple(re.findall(r'`([^`]+)`',match.group(1) if match else ""))
+def _allowed(body:str)->tuple[str,...]: return parse_allowed_files(body)
+def parse_issues(payload:dict)->list[Issue]:
+ nodes=payload["data"]["repository"]["issue"]["subIssues"]["nodes"]
+ return [Issue(n["number"],n["title"],n["url"],n["state"],tuple(x["name"] for x in n["labels"]["nodes"]),tuple(x["login"] for x in n["assignees"]["nodes"]),tuple((x["number"],x["state"]) for x in n["blockedBy"]["nodes"]),parse_allowed_files(n.get("body",""))) for n in nodes]
+def _run(cmd:list[str])->str:
+ env={"HOME": os.environ.get("HOME", str(Path.home()))}
+ env["PATH"] = f'{env["HOME"]}/.hermes/hermes-agent/venv/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+ r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,env=env)
+ if r.returncode: raise RuntimeError(r.stderr.strip() or r.stdout.strip())
+ return r.stdout
+def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
+ owner,name=REPOSITORY.split("/"); return parse_issues(json.loads(run(["gh","api","graphql","-F",f"owner={owner}","-F",f"name={name}","-F",f"number={MAP_ISSUE}","-f",f"query={GRAPHQL}"])))
+def select_frontier(issues:Iterable[Issue])->list[Issue]: return sorted([i for i in issues if i.state=="OPEN" and IMPLEMENTATION_LABEL in i.labels and not i.assignees and not any(s=="OPEN" for _,s in i.blocked_by)],key=lambda i:i.number)
+def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
+ raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"])); cards=raw if isinstance(raw,list) else raw.get("tasks",[])
+ result=[]
+ for c in cards:
+  key=c.get("idempotency_key",c.get("idempotencyKey","")); status=str(c.get("status",c.get("state",""))).lower()
+  match=re.fullmatch(r"partiful:implementation:(\d+)",key)
+  if match and status not in {"done","closed","cancelled","completed"}:
+   issue=int(match.group(1)); paths=list(parse_allowed_files(c.get("body",""))); card=c.get("id")
+   if not paths: raise RuntimeError(f"card {card} for issue #{issue} has no allowed paths")
+   result.append({"issue":issue,"paths":paths,"card":card})
+ return result
+def select_wave_for_issues(issues:Iterable[Issue],cards:Iterable[dict])->dict:
+ issue_list=list(issues)
+ for issue in issue_list:
+  if not issue.allowed_paths: raise RuntimeError(f"issue #{issue.number} has no allowed paths")
+ return select_wave([{"number":i.number,"paths":list(i.allowed_paths)} for i in issue_list],cards)
+def build_implement_body(issue:Issue)->str:
+ return f'''Implement GitHub issue #{issue.number}: {issue.url}
 
+Read `docs/agentic-engineering.md` and the GitHub issue (canonical requirements, allowed files, blockers, and commands). Use no credentials and make no live mutations. No child review/revision/integrator cards.
 
-def parse_issues(payload: dict) -> list[Issue]:
-    nodes = payload["data"]["repository"]["issue"]["subIssues"]["nodes"]
-    return [
-        Issue(
-            number=node["number"],
-            title=node["title"],
-            url=node["url"],
-            state=node["state"],
-            labels=tuple(label["name"] for label in node["labels"]["nodes"]),
-            assignees=tuple(person["login"] for person in node["assignees"]["nodes"]),
-            blocked_by=tuple(
-                (blocker["number"], blocker["state"])
-                for blocker in node["blockedBy"]["nodes"]
-            ),
-        )
-        for node in nodes
-    ]
+## Implementer phase
+Feature/Bug/Refactor mode only as declared in the issue. Use strict feature/bug TDD, domain vocabulary and public seams. Record strict RED then GREEN command/output proof, focused/full verification, exact changed paths, PR URL and exact 40-character head SHA. Open/update PR, post and perform PR+handoff readback, then native `request-review` to `partiful-code-reviewer` on this same card with PR URL and SHA.
 
+Allowed files: {", ".join(f'`{path}`' for path in issue.allowed_paths)}.
 
-def select_frontier(issues: Iterable[Issue]) -> list[Issue]:
-    return sorted(
-        (
-            issue
-            for issue in issues
-            if issue.state == "OPEN"
-            and IMPLEMENTATION_LABEL in issue.labels
-            and not issue.assignees
-            and not any(state == "OPEN" for _, state in issue.blocked_by)
-        ),
-        key=lambda issue: issue.number,
-    )
-
-
-def build_implement_body(issue: Issue, attempt: str | None = None) -> str:
-    revision = ""
-    if attempt:
-        revision = f"""
-This is revision attempt `{attempt}`. Find the existing open PR linked from the issue. Fetch its exact head commit into this isolated worktree, apply only the independently requested corrections, and push the new commit to that same PR head branch. Do not open a duplicate PR.
-"""
-    return f"""Implement GitHub issue #{issue.number}: {issue.url}
-
-Role: autonomous Partiful implementer. Work only in the isolated worktree created for this card.{revision}
-
-1. Read the issue, every authoritative decision it links, `docs/wayfinder-autonomy.md`, and current repository state. Re-read native blockers immediately before work. Stop if the issue is closed or blocked.
-2. For the initial attempt, re-read the issue before claiming it; assign it to `@me` only if it is still unassigned. For a revision, preserve the existing claim.
-3. Follow strict TDD: write one failing test, run it and confirm the expected failure, write the minimum implementation, then run the focused and full mechanical checks named by the issue.
-4. Change only the files allowed by the issue. Keep open evidence gates fail-closed. Do not invent product behavior, transport semantics, response shapes, permission rules, retry behavior, or cleanup behavior.
-5. Inspect the exact diff, commit only allowed paths, push the branch, and open or update one PR whose body contains `Closes #{issue.number}`, authoritative decision links, evidence-gate status, and exact verification output.
-6. Post one `## Implementation handoff` comment on the issue with the PR URL, reviewed commit SHA, changed paths, RED and GREEN test evidence, full verification commands, and any still-open gate.
-7. Read the PR and issue comment back. Complete this card with the PR URL, PR number, commit SHA, and handoff comment URL in metadata.
-
-Do not merge the PR, close the issue, weaken tests, or make live Partiful mutations. This worker intentionally has no live service credentials or browser/computer-control capability. Do not seek, import, recover, or create Partiful credentials. Until a dedicated gated wrapper exists with an explicit approval artifact, auditable operation ID, cleanup, and read-back proof, any acceptance step that needs a live mutation is `EVIDENCE_REQUIRED` and must stay blocked."""
-
-
-def build_review_body(issue: Issue) -> str:
-    return f"""Independently rubber-duck the implementation for GitHub issue #{issue.number}: {issue.url}
-
-Role: read-only Partiful code reviewer in a fresh context. Do not use the implementer transcript.
-
-1. Load the `rubber-duck`, `adversarial-code-review`, and `github-code-review` skills. Read the issue, its authoritative decision links, the latest `## Implementation handoff`, and the linked PR.
-2. Resolve the PR number, then run `python3 scripts/checkout_verified_pr_head.py <PR-number>`. Record the returned SHA as `REVIEWED_SHA`. This fetches the current PR ref and detaches this isolated worktree at the exact GitHub-declared head. Stop with `EVIDENCE_REQUIRED` if it fails.
-3. Inspect the complete diff against the PR base and check that changed paths stay within issue scope. Immediately before every mechanical check, run `git rev-parse HEAD` and require exact equality with `REVIEWED_SHA`; never run or report a check from another commit.
-4. Inspect the production code and tests against the issue acceptance criteria, settled decisions, safety boundaries, evidence gates, and cleanup limits. Run every required mechanical check against `REVIEWED_SHA`.
-5. Do not edit repository file contents, push commits, merge, close the issue, or invent missing product or transport behavior. The detached checkout is allowed; content edits are not.
-6. Post exactly one issue comment:
-
-## Implementation review
-PR: <PR URL>
-Commit: <exact reviewed PR head SHA>
-Verdict: APPROVE | REQUEST_CHANGES | EVIDENCE_REQUIRED
-
-### Findings
-1. Issue: <substantive defect or `none`>
-   Impact: <why acceptance depends on it>
-   Correction: <bounded correction>
-   Verification: <proof required>
-
-Maximum three substantive findings. Ignore style, naming, grammar, and cosmetic refactors. `APPROVE` is valid only when the exact commit is safe to merge. Read the comment back and complete this card with its URL, database ID, verdict, PR number, and commit SHA."""
-
-
-def build_integrate_body(issue: Issue) -> str:
-    return f"""Reconcile and integrate GitHub implementation issue #{issue.number}: {issue.url}
-
-Role: Partiful integrator. Read `docs/wayfinder-autonomy.md`, the latest implementation handoff, the latest independent implementation review, the linked PR, and native blockers.
-
-Before any write, re-read the issue, PR state, PR head SHA, recent comments, required checks, and map issue #8. Resolve the PR number and run `python3 scripts/checkout_verified_pr_head.py <PR-number>`. Record the returned SHA as `INTEGRATION_SHA`. Require `INTEGRATION_SHA` to equal the exact commit named by the latest approved review. Immediately before every mechanical check and again before merge, run `git rev-parse HEAD` and require equality with `INTEGRATION_SHA`; also re-read GitHub's current `headRefOid` and require the same equality. Stop without merging on any mismatch.
-
-- `APPROVE`: confirm the review names the latest PR head commit exactly. Confirm every required check is successful and rerun the issue's mechanical verification against that commit when no required CI check covers it. Confirm the diff stays within scope. Merge the PR with squash, verify the PR is merged, verify the issue is closed, and read after write on both targets. If no open child issue remains under map #8, post a compact completion comment and close the map after reading it back.
-- `REQUEST_CHANGES`: do not merge. If fewer than three implementation reviews exist, run `python3 scripts/implementation_frontier_pump.py --issue {issue.number} --attempt <review-comment-id>` to create a fresh implement -> review -> integrate chain, then complete this card with the new card IDs. On the third failed review, block this card with the exact unresolved defects rather than looping forever.
-- `EVIDENCE_REQUIRED`: do not merge. Create the smallest `wayfinder:task` evidence issue, attach it to map #8, add it as a native blocker of #{issue.number}, and leave the implementation issue and PR open.
-
-Reject stale approvals, failing or pending required checks, open blockers, out-of-scope changes, and unverified live-mutation behavior. Record exact PR, issue, check, and map states in the card metadata."""
-
-
-def _run(command: list[str]) -> str:
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
-    if result.returncode:
-        detail = result.stderr.strip() or result.stdout.strip()
-        raise RuntimeError(
-            f"command failed ({result.returncode}): {' '.join(command[:4])}: {detail}"
-        )
-    return result.stdout
-
-
-def fetch_issues(run: Callable[[list[str]], str] = _run) -> list[Issue]:
-    owner, name = REPOSITORY.split("/", 1)
-    issues: list[Issue] = []
-    after: str | None = None
-    while True:
-        command = [
-            "/opt/homebrew/bin/gh",
-            "api",
-            "graphql",
-            "-F",
-            f"owner={owner}",
-            "-F",
-            f"name={name}",
-            "-F",
-            f"number={MAP_ISSUE}",
-            "-f",
-            f"query={GRAPHQL}",
-        ]
-        if after is not None:
-            command.extend(["-F", f"after={after}"])
-        payload = json.loads(run(command))
-        issues.extend(parse_issues(payload))
-        page_info = payload["data"]["repository"]["issue"]["subIssues"]["pageInfo"]
-        if not page_info["hasNextPage"]:
-            return issues
-        after = page_info["endCursor"]
-        if not after:
-            raise RuntimeError("GitHub reported another sub-issue page without an end cursor")
-
-
-def _task_id(output: str) -> str:
-    payload = json.loads(output)
-    task_id = payload.get("task_id") or payload.get("id")
-    if not task_id:
-        raise RuntimeError(f"Kanban create returned no task id: {payload!r}")
-    return str(task_id)
-
-
-def _key(issue: Issue, stage: str, attempt: str | None) -> str:
-    base = f"partiful:implementation:{issue.number}"
-    return f"{base}:{attempt}:{stage}" if attempt else f"{base}:{stage}"
-
-
-def _branch(issue: Issue, stage: str, attempt: str | None) -> str:
-    suffix = re.sub(r"[^A-Za-z0-9._-]+", "-", attempt or "initial")[:40]
-    return f"partiful/issue-{issue.number}-{suffix}-{stage}"
-
-
-def _create_command(
-    issue: Issue,
-    stage: str,
-    title: str,
-    body: str,
-    assignee: str,
-    attempt: str | None,
-    parent: str | None = None,
-) -> list[str]:
-    is_implementation = stage == "implement"
-    command = [
-        "hermes",
-        "kanban",
-        "--board",
-        BOARD,
-        "create",
-        title,
-        "--body",
-        body,
-        "--assignee",
-        assignee,
-        "--workspace",
-        WORKSPACE,
-        "--branch",
-        _branch(issue, stage, attempt),
-        "--tenant",
-        "partiful-wayfinder",
-        "--priority",
-        "80",
-        "--idempotency-key",
-        _key(issue, stage, attempt),
-        "--max-runtime",
-        "2h" if is_implementation else "60m",
-        "--max-retries",
-        "3",
-        "--goal",
-        "--goal-max-turns",
-        "30" if is_implementation else "12",
-        "--json",
-    ]
-    skills = {
-        "implement": [
-            "test-driven-development",
-            "collaborative-repository-hygiene",
-            "verification-before-completion",
-            "github-pr-workflow",
-        ],
-        "review": ["rubber-duck", "adversarial-code-review", "github-code-review"],
-        "integrate": [
-            "github-pr-workflow",
-            "verification-before-completion",
-            "collaborative-repository-hygiene",
-        ],
-    }[stage]
-    for skill in skills:
-        command.extend(["--skill", skill])
-    if parent:
-        command.extend(["--parent", parent])
-    return command
-
-
-def create_cards(
-    issue: Issue,
-    attempt: str | None = None,
-    run: Callable[[list[str]], str] = _run,
-) -> tuple[str, str, str]:
-    implement_id = _task_id(
-        run(
-            _create_command(
-                issue,
-                "implement",
-                f"implement: #{issue.number} {issue.title}",
-                build_implement_body(issue, attempt),
-                "partiful-implementer",
-                attempt,
-            )
-        )
-    )
-    review_id = _task_id(
-        run(
-            _create_command(
-                issue,
-                "review",
-                f"code review: #{issue.number} {issue.title}",
-                build_review_body(issue),
-                "partiful-code-reviewer",
-                attempt,
-                parent=implement_id,
-            )
-        )
-    )
-    integrate_id = _task_id(
-        run(
-            _create_command(
-                issue,
-                "integrate",
-                f"integrate: #{issue.number} {issue.title}",
-                build_integrate_body(issue),
-                "partiful-integrator",
-                attempt,
-                parent=review_id,
-            )
-        )
-    )
-    return implement_id, review_id, integrate_id
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--issue", type=int, help="queue one open implementation issue")
-    parser.add_argument("--attempt", help="stable review-comment id for a revision chain")
-    parser.add_argument("--dry-run", action="store_true", help="show selected frontier only")
-    parser.add_argument("--quiet", action="store_true", help="print nothing on success")
-    args = parser.parse_args()
-
-    try:
-        issues = fetch_issues()
-        if args.issue is not None:
-            selected = [issue for issue in issues if issue.number == args.issue]
-            if not selected:
-                raise RuntimeError(
-                    f"issue #{args.issue} is not a sub-issue of map #{MAP_ISSUE}"
-                )
-            issue = selected[0]
-            if issue.state != "OPEN" or IMPLEMENTATION_LABEL not in issue.labels:
-                raise RuntimeError(
-                    f"issue #{issue.number} is not an open {IMPLEMENTATION_LABEL} issue"
-                )
-            if any(state == "OPEN" for _, state in issue.blocked_by):
-                raise RuntimeError(f"issue #{issue.number} still has an open blocker")
-            frontier = selected
-        else:
-            frontier = select_frontier(issues)
-
-        if args.dry_run:
-            if not args.quiet:
-                print(json.dumps([issue.__dict__ for issue in frontier], indent=2))
-            return 0
-
-        if frontier:
-            _run(
-                [
-                    sys.executable,
-                    str(ROOT / "scripts" / "verify_implementation_worker_profiles.py"),
-                ]
-            )
-        created = [
-            {"issue": issue.number, "cards": create_cards(issue, attempt=args.attempt)}
-            for issue in frontier
-        ]
-        if not args.quiet and created:
-            print(json.dumps(created, indent=2))
-        return 0
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError, RuntimeError) as error:
-        print(f"FAIL: {error}", file=sys.stderr)
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+## Reviewer phase
+After native request-review, checkout the exact PR head at the exact 40-character SHA (exact 40-character PR SHA) and prove detached HEAD equality. Run all nine categories: specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, evidence_rigor. Post machine-parseable structured verdict `## Implementation review`, `Verdict: APPROVE|REQUEST_CHANGES`, `Commit: <40-sha>`, `Category-<name>: PASS|FAIL` (for example `Category-specification: PASS`), `RED:`, and `GREEN:`. Count structural review events/structured reviews. On request changes, native-return this same card to `partiful-implementer` with evidence-block; after attempt 3 hard-block (max 3 reviews). On approval invoke `scripts/deterministic_merge_gate.py`. Escalate only contradictory requirements, safety choices, or genuinely unresolved behavior; architectural boundaries do not escalate.'''
+def build_review_body(issue:Issue)->str: return build_implement_body(issue)
+def request_native_review(card:str,pr_url:str,sha:str,run:Callable[[list[str]],str]=_run)->None:
+ if not re.fullmatch(r"[0-9a-f]{40}",sha):raise ValueError("exact 40-character SHA required")
+ run(["hermes","kanban","--board",BOARD,"request-review",card,"--reviewer","partiful-code-reviewer","--summary",f"PR: {pr_url}; exact SHA: {sha}","--metadata",json.dumps({"pr_url":pr_url,"sha":sha},sort_keys=True)])
+def request_changes_on_same_card(card:str,evidence_block:str,run:Callable[[list[str]],str]=_run)->None:
+ if not evidence_block.strip():raise ValueError("evidence block required")
+ run(["hermes","kanban","--board",BOARD,"request-changes",card,evidence_block])
+def _task_id(raw:str)->str:
+ obj=json.loads(raw); value=obj.get("task_id") or obj.get("id")
+ if not value: raise RuntimeError("Kanban create returned no task id")
+ return str(value)
+def create_card(issue:Issue,run:Callable[[list[str]],str]=_run)->str:
+ return _task_id(run(["hermes","kanban","--board",BOARD,"create",f"implement: #{issue.number} {issue.title}","--body",build_implement_body(issue),"--assignee","partiful-implementer","--workspace",WORKSPACE,"--branch",f"partiful/issue-{issue.number}","--tenant","partiful-wayfinder","--priority","80","--idempotency-key",f"partiful:implementation:{issue.number}","--max-runtime","2h","--max-retries","3","--goal","--goal-max-turns","30","--skill","test-driven-development","--json"]))
+def main(argv:list[str]|None=None)->int:
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument("--issue",type=int);p.add_argument("--dry-run",action="store_true");p.add_argument("--quiet",action="store_true");a=p.parse_args(argv)
+ try:
+  ready=select_frontier(fetch_issues()); ready=[x for x in ready if a.issue is None or x.number==a.issue]; wave=select_wave_for_issues(ready,discover_live_cards())
+  if a.dry_run:
+   if not a.quiet: print(json.dumps(wave,sort_keys=True))
+   return 0
+  if ready: _run([sys.executable,str(ROOT/"scripts/verify_implementation_worker_profiles.py")])
+  existing={x["issue"] for x in discover_live_cards()}; created=[{"issue":x["number"],"card":create_card(next(i for i in ready if i.number==x["number"]))} for x in wave["selected"] if x["number"] not in existing]
+  if not a.quiet: print(json.dumps({"created":created,"held":wave["held"]},sort_keys=True))
+  return 0
+ except (RuntimeError,ValueError,KeyError,json.JSONDecodeError) as e: print(f"FAIL: {e}",file=sys.stderr);return 1
+if __name__=="__main__": raise SystemExit(main())
