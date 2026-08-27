@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Queue idempotent credential-free evidence cards for ready Wayfinder tasks."""
 from __future__ import annotations
-import argparse,json,subprocess,sys
+import argparse,json,os,subprocess,sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable,Iterable
@@ -15,7 +15,7 @@ def select_frontier(issues:Iterable[Issue])->dict:
  return {"selected":selected,"held":held}
 def build_body(i:Issue)->str:return f'''Evidence mode for GitHub task #{i.number}: {i.url}. Use dedicated `partiful-evidence` profile and terminal/file/skills only. Perform the narrowest bounded probe: bounded credential-free public/repository investigation is allowed; redact values and report sources. A reviewed `unsupported` conclusion is permitted. Use no credentials: never seek, use, recover, import, or create credentials; no live mutation. GitHub blockers naturally hold blocked tasks. Do not create review or integrate child cards.'''
 def _run(c:list[str])->str:
- r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True,env={"PATH":"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"})
+ r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True,env={"PATH":"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin","HOME":os.environ.get("HOME",str(Path.home()))})
  if r.returncode:raise RuntimeError(r.stderr.strip() or r.stdout.strip())
  return r.stdout
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:

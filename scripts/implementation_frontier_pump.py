@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Idempotently create one conflict-free Partiful implementation card per issue."""
 from __future__ import annotations
-import argparse, json, re, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -20,7 +20,7 @@ def parse_issues(payload:dict)->list[Issue]:
  nodes=payload["data"]["repository"]["issue"]["subIssues"]["nodes"]
  return [Issue(n["number"],n["title"],n["url"],n["state"],tuple(x["name"] for x in n["labels"]["nodes"]),tuple(x["login"] for x in n["assignees"]["nodes"]),tuple((x["number"],x["state"]) for x in n["blockedBy"]["nodes"]),parse_allowed_files(n.get("body",""))) for n in nodes]
 def _run(cmd:list[str])->str:
- r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"})
+ r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin", "HOME": os.environ.get("HOME", str(Path.home()))})
  if r.returncode: raise RuntimeError(r.stderr.strip() or r.stdout.strip())
  return r.stdout
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:

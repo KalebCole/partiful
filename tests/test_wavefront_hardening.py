@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -84,10 +85,12 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
         for command in create_commands:
             self.assertIn("partiful:implementation:34", command)
             self.assertIn(adopt.SHA, command[command.index("--body") + 1])
-            self.assertEqual("partiful-code-reviewer", command[command.index("--assignee") + 1])
+            self.assertEqual("partiful-implementer", command[command.index("--assignee") + 1])
+            self.assertEqual("running", command[command.index("--initial-status") + 1])
             self.assertIn("PR #49", command[command.index("--body") + 1])
         for command in review_commands:
             self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], command[:6])
+            self.assertEqual("partiful-code-reviewer", command[command.index("--reviewer") + 1])
             self.assertIn(adopt.SHA, command[command.index("--metadata") + 1])
 
     def test_native_same_card_transitions_use_review_then_return_commands(self) -> None:
@@ -132,6 +135,29 @@ class PumpHardeningTests(unittest.TestCase):
             self.assertEqual(1, evidence.main(["--quiet"]))
         self.assertEqual("", stdout.getvalue())
         self.assertIn("FAIL: boom", stderr.getvalue())
+
+    def test_frontier_subprocess_environment_keeps_home_without_secret_passthrough(self) -> None:
+        environments: list[dict[str, str]] = []
+
+        class Result:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+
+        def run(_command: list[str], **kwargs: object) -> Result:
+            environments.append(dict(kwargs["env"]))
+            return Result()
+
+        with patch.dict(os.environ, {"HOME": "/private/test-home", "GH_TOKEN": "secret", "UNRELATED_SECRET": "nope"}, clear=True), patch.object(implementation.subprocess, "run", run), patch.object(evidence.subprocess, "run", run):
+            self.assertEqual("ok", implementation._run(["gh", "api"]))
+            self.assertEqual("ok", evidence._run(["gh", "api"]))
+
+        self.assertEqual(2, len(environments))
+        for environment in environments:
+            self.assertEqual("/private/test-home", environment.get("HOME"))
+            self.assertIn("PATH", environment)
+            self.assertNotIn("GH_TOKEN", environment)
+            self.assertNotIn("UNRELATED_SECRET", environment)
 
 
 class DurableContractHardeningTests(unittest.TestCase):
