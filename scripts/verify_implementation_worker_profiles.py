@@ -47,6 +47,21 @@ def _env_names(env_text: str) -> tuple[str, ...]:
     return tuple(sorted(names))
 
 
+def _section_value(config_text: str, section: str, key: str) -> str | None:
+    in_section = False
+    for line in config_text.splitlines():
+        if line == f"{section}:":
+            in_section = True
+            continue
+        if in_section and line and not line[0].isspace():
+            return None
+        if in_section and line.startswith("  "):
+            stripped = line.strip()
+            if stripped.startswith(f"{key}:"):
+                return stripped.split(":", 1)[1].strip()
+    return None
+
+
 def verify_worker_profiles(profiles_root: Path) -> dict[str, dict[str, object]]:
     result: dict[str, dict[str, object]] = {}
     errors: list[str] = []
@@ -57,15 +72,39 @@ def verify_worker_profiles(profiles_root: Path) -> dict[str, dict[str, object]]:
         if not config_path.is_file():
             errors.append(f"{name}: missing config.yaml")
             continue
-        tools = _toolsets(config_path.read_text(encoding="utf-8"))
+        config_text = config_path.read_text(encoding="utf-8")
+        tools = _toolsets(config_text)
         env_names = _env_names(env_path.read_text(encoding="utf-8")) if env_path.exists() else ()
+        auto_source_bashrc = _section_value(
+            config_text, "terminal", "auto_source_bashrc"
+        )
+        env_passthrough = _section_value(config_text, "terminal", "env_passthrough")
+        shell_init_files = _section_value(config_text, "terminal", "shell_init_files")
         if tools != ALLOWED_TOOLSETS:
             errors.append(
                 f"{name}: toolsets must be {sorted(ALLOWED_TOOLSETS)}, got {sorted(tools)}"
             )
         if env_names:
             errors.append(f"{name}: profile .env contains variables {list(env_names)}")
-        result[name] = {"toolsets": sorted(tools), "env_variables": list(env_names)}
+        if auto_source_bashrc != "false":
+            errors.append(
+                f"{name}: terminal.auto_source_bashrc must be false, got {auto_source_bashrc!r}"
+            )
+        if env_passthrough != "[]":
+            errors.append(
+                f"{name}: terminal.env_passthrough must be [], got {env_passthrough!r}"
+            )
+        if shell_init_files != "[]":
+            errors.append(
+                f"{name}: terminal.shell_init_files must be [], got {shell_init_files!r}"
+            )
+        result[name] = {
+            "toolsets": sorted(tools),
+            "env_variables": list(env_names),
+            "auto_source_bashrc": auto_source_bashrc,
+            "env_passthrough": env_passthrough,
+            "shell_init_files": shell_init_files,
+        }
     if errors:
         raise RuntimeError("profile isolation audit failed: " + "; ".join(errors))
     return result

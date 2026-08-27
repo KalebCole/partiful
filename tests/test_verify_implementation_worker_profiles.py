@@ -11,11 +11,26 @@ from scripts.verify_implementation_worker_profiles import (
 
 
 class VerifyImplementationWorkerProfilesTests(unittest.TestCase):
-    def _profile(self, root: Path, name: str, *, tools: str, env: str = "") -> None:
+    def _profile(
+        self,
+        root: Path,
+        name: str,
+        *,
+        tools: str,
+        env: str = "",
+        auto_source_bashrc: bool = False,
+    ) -> None:
         directory = root / name
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "config.yaml").write_text(
-            f"model:\n  default: test\ntoolsets: {tools}\n", encoding="utf-8"
+            "model:\n"
+            "  default: test\n"
+            f"toolsets: {tools}\n"
+            "terminal:\n"
+            "  env_passthrough: []\n"
+            "  shell_init_files: []\n"
+            f"  auto_source_bashrc: {str(auto_source_bashrc).lower()}\n",
+            encoding="utf-8",
         )
         (directory / ".env").write_text(env, encoding="utf-8")
 
@@ -42,6 +57,21 @@ class VerifyImplementationWorkerProfilesTests(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(RuntimeError, "profile isolation audit failed"):
+                verify_worker_profiles(root)
+
+    def test_rejects_host_shell_startup_inheritance(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED_PROFILES:
+                self._profile(root, name, tools="[terminal, file, skills]")
+            self._profile(
+                root,
+                REQUIRED_PROFILES[0],
+                tools="[terminal, file, skills]",
+                auto_source_bashrc=True,
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "auto_source_bashrc"):
                 verify_worker_profiles(root)
 
 
