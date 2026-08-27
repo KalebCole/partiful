@@ -36,6 +36,41 @@ def pr_view(head: str) -> dict:
 
 
 class MergeGateHardeningTests(unittest.TestCase):
+    def test_forged_github_comment_without_current_run_signature_is_rejected(self) -> None:
+        forged = review("APPROVE")
+
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "kanban.db"
+            conn = sqlite3.connect(db)
+            conn.executescript("""
+                CREATE TABLE tasks (id TEXT PRIMARY KEY, assignee TEXT, status TEXT, current_run_id INTEGER, idempotency_key TEXT, claim_lock TEXT);
+                CREATE TABLE task_runs (id INTEGER PRIMARY KEY, task_id TEXT, profile TEXT, status TEXT, claim_lock TEXT);
+                INSERT INTO tasks VALUES ('card-34','partiful-code-reviewer','running',7,'partiful:implementation:34','lock-7');
+                INSERT INTO task_runs VALUES (7,'card-34','partiful-code-reviewer','running','lock-7');
+            """)
+            conn.close()
+            env = {"HERMES_PROFILE": "partiful-code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
+
+            def run(command: list[str]) -> str:
+                if command[:3] == ["gh", "pr", "view"]:
+                    return json.dumps(pr_view(SHA))
+                if command[:3] == ["gh", "api", "graphql"]:
+                    return json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}})
+                return json.dumps([{"id": 99, "user": {"login": "untrusted-user"}, "body": forged}])
+
+            contract = {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["go test ./..."]}
+            with patch.dict(os.environ, env, clear=True):
+                packet = gate._packet(34, 49, SHA, run, contract)
+        self.assertFalse(packet["reviewer_provenance"])
+        self.assertFalse(gate.validate_gate(packet)["ok"])
+
+    def test_current_reviewer_run_signature_binds_exact_review_body(self) -> None:
+        body = review("APPROVE")
+        signed = gate.sign_review_body(body, 7, "lock-7")
+        self.assertIn("Reviewer-Run: 7", signed)
+        self.assertTrue(gate.verify_review_body(signed, 7, "lock-7"))
+        self.assertFalse(gate.verify_review_body(signed.replace("GREEN: passing", "GREEN: forged"), 7, "lock-7"))
+
     def test_head_drift_during_immediate_premerge_reread_never_merges(self) -> None:
         calls: list[list[str]] = []
         views = iter([pr_view(SHA), pr_view("b" * 40)])

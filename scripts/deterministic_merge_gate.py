@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed exact-SHA merge gate for a reviewed Partiful PR."""
 from __future__ import annotations
-import argparse,fnmatch,json,os,re,shlex,sqlite3,subprocess
+import argparse,fnmatch,hashlib,hmac,json,os,re,shlex,sqlite3,subprocess
 from pathlib import Path
 from typing import Callable
 try: from scripts.select_implementation_wave import _overlap
@@ -45,7 +45,17 @@ def _run(c:list[str])->str:
 def load_issue_contract(issue:int)->dict:
  raw=json.loads((ROOT/"config/implementation-write-sets.json").read_text())[str(issue)]
  return raw if isinstance(raw,dict) else {"paths":raw,"required_checks":["declared"],"verification":["go test ./..."]}
-def _native_reviewer_provenance(issue:int)->bool:
+def sign_review_body(body:str,run_id:int,claim:str)->str:
+ unsigned=re.sub(r"\n?Reviewer-Run:\s*\d+\s*\nReviewer-Proof:\s*[0-9a-f]{64}\s*$","",body.strip(),flags=re.M)
+ tagged=f"{unsigned}\nReviewer-Run: {run_id}"
+ proof=hmac.new(claim.encode(),tagged.encode(),hashlib.sha256).hexdigest()
+ return f"{tagged}\nReviewer-Proof: {proof}"
+def verify_review_body(body:str,run_id:int,claim:str)->bool:
+ proof=re.search(r"^Reviewer-Proof:\s*([0-9a-f]{64})\s*$",body,re.M)
+ tagged=re.sub(r"\nReviewer-Proof:\s*[0-9a-f]{64}\s*$","",body.strip(),flags=re.M)
+ expected=hmac.new(claim.encode(),tagged.encode(),hashlib.sha256).hexdigest()
+ return bool(proof and re.search(rf"^Reviewer-Run:\s*{run_id}\s*$",tagged,re.M) and hmac.compare_digest(proof.group(1),expected))
+def _native_reviewer_binding(issue:int)->tuple[int,str]|None:
  if os.environ.get("HERMES_PROFILE")!="partiful-code-reviewer" or os.environ.get("HERMES_KANBAN_BOARD")!="partiful":return False
  db,task_id,run_id,claim=(os.environ.get(k,"") for k in ("HERMES_KANBAN_DB","HERMES_KANBAN_TASK","HERMES_KANBAN_RUN_ID","HERMES_KANBAN_CLAIM_LOCK"))
  if not db or not task_id or not run_id.isdigit() or not claim:return False
@@ -55,8 +65,11 @@ def _native_reviewer_provenance(issue:int)->bool:
    task=conn.execute("SELECT assignee,status,current_run_id,idempotency_key,claim_lock FROM tasks WHERE id=?",(task_id,)).fetchone()
    run=conn.execute("SELECT task_id,profile,status,claim_lock FROM task_runs WHERE id=?",(int(run_id),)).fetchone()
   finally:conn.close()
- except (OSError,sqlite3.Error):return False
- return task==("partiful-code-reviewer","running",int(run_id),f"partiful:implementation:{issue}",claim) and run==(task_id,"partiful-code-reviewer","running",claim)
+ except (OSError,sqlite3.Error):return None
+ return (int(run_id),claim) if task==("partiful-code-reviewer","running",int(run_id),f"partiful:implementation:{issue}",claim) and run==(task_id,"partiful-code-reviewer","running",claim) else None
+def _native_reviewer_provenance(issue:int,body:str|None=None)->bool:
+ binding=_native_reviewer_binding(issue)
+ return bool(binding and (body is None or verify_review_body(body,*binding)))
 def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],contract:dict)->dict:
  view=json.loads(run(["gh","pr","view",str(pr),"--json","headRefOid,files,statusCheckRollup"]));o,n="KalebCole","partiful";q='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){blockedBy(first:100){nodes{state number}}}}}'
  blockers=json.loads(run(["gh","api","graphql","-F",f"owner={o}","-F",f"name={n}","-F",f"number={issue}","-f",f"query={q}"]))["data"]["repository"]["issue"]["blockedBy"]["nodes"]
@@ -64,10 +77,15 @@ def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],cont
  get=lambda pat:(re.search(pat,body,re.M).group(1) if re.search(pat,body,re.M) else None)
  cats={c:get(rf"^Category-{c}:\s*(PASS|FAIL)\s*$") for c in CATEGORIES}
  checks=[{"context":x.get("name") or x.get("context"),"state":x.get("conclusion") or x.get("status")} for x in view.get("statusCheckRollup",[])]
- return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"reviewer_provenance":_native_reviewer_provenance(issue),"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"no_required_ci":contract.get("no_required_ci"),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
+ return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"reviewer_provenance":_native_reviewer_provenance(issue,body),"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"no_required_ci":contract.get("no_required_ci"),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
 def main(argv:list[str]|None=None)->int:
- p=argparse.ArgumentParser();p.add_argument("--issue",type=int,required=True);p.add_argument("--pr",type=int,required=True);p.add_argument("--reviewed-sha",required=True);a=p.parse_args(argv)
+ p=argparse.ArgumentParser();p.add_argument("--issue",type=int,required=True);p.add_argument("--pr",type=int);p.add_argument("--reviewed-sha");p.add_argument("--sign-review-file");a=p.parse_args(argv)
  try:
+  if a.sign_review_file:
+   binding=_native_reviewer_binding(a.issue)
+   if not binding:raise RuntimeError("review signing requires the active native reviewer run")
+   print(sign_review_body(Path(a.sign_review_file).read_text(),*binding));return 0
+  if a.pr is None or not a.reviewed_sha:raise RuntimeError("--pr and --reviewed-sha are required for merge")
   contract=load_issue_contract(a.issue); packet=_packet(a.issue,a.pr,a.reviewed_sha,_run,contract);result=validate_gate(packet)
   if not result["ok"]:print(json.dumps(result,sort_keys=True));return 1
   branch=_run(["git","branch","--show-current"]).strip()
