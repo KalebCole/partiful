@@ -5,7 +5,7 @@ import argparse,json,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; SHA="27119290015d4d29e0e6f128788128c2b06a4e50"
 def adopt(run=None)->str:
- command=["hermes","kanban","--board","partiful","create","implement: #34 application kernel","--assignee","partiful-implementer","--workspace",f"worktree:{ROOT}","--branch","partiful/issue-34","--tenant","partiful-wayfinder","--idempotency-key","partiful:implementation:34","--initial-status","running","--body",f"Adopt existing PR #49 directly in review phase. Exact SHA: {SHA}. Do not rerun implementation or create children. Review using docs/agentic-engineering.md and native same-card lifecycle.","--json"]
+ command=["hermes","kanban","--board","partiful","create","implement: #34 application kernel","--assignee","partiful-implementer","--workspace",f"worktree:{ROOT}","--branch","partiful/issue-34-initial-implement","--tenant","partiful-wayfinder","--idempotency-key","partiful:implementation:34","--initial-status","running","--body",f"Adopt existing PR #49 directly in review phase. Exact SHA: {SHA}. Do not rerun implementation or create children. Review using docs/agentic-engineering.md and native same-card lifecycle.","--json"]
  if run is None:
   def run(c:list[str])->str:
    result=subprocess.run(c,cwd=ROOT,text=True,capture_output=True)
