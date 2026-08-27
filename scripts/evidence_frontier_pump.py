@@ -13,7 +13,7 @@ def select_frontier(issues:Iterable[Issue])->dict:
  for i in sorted(issues,key=lambda x:x.number):
   if 20<=i.number<=29 and i.state=="OPEN" and TASK_LABEL in i.labels and not i.assignees and not any(s=="OPEN" for _,s in i.blocked_by): selected.append(i)
  return {"selected":selected,"held":held}
-def build_body(i:Issue)->str:return f'''Evidence mode for GitHub task #{i.number}: {i.url}. Use dedicated `partiful-evidence` profile and terminal/file/skills only. Perform the narrowest bounded probe: bounded credential-free public/repository investigation is allowed; redact values and report sources. A reviewed `unsupported` conclusion is permitted. Use no credentials: never seek, use, recover, import, or create credentials; no live mutation. GitHub blockers naturally hold blocked tasks. Do not create review or integrate child cards.'''
+def build_body(i:Issue)->str:return f'''Evidence mode for GitHub task #{i.number}: {i.url}. Use dedicated `partiful-evidence` profile and terminal/file/skills only. Perform the narrowest bounded probe: bounded credential-free public/repository investigation is allowed; redact values and report sources. A reviewed `unsupported` conclusion is permitted. Use no credentials: never seek, use, recover, import, or create credentials; no live mutation. Treat the repository as read-only: Do not edit repository files, commit, or push. Report findings and sources only in the card result/comments. GitHub blockers naturally hold blocked tasks. Do not create review or integrate child cards.'''
 def _run(c:list[str])->str:
  env={"HOME":os.environ.get("HOME",str(Path.home()))}
  env["PATH"]=f'{env["HOME"]}/.hermes/hermes-agent/venv/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'
@@ -27,7 +27,7 @@ def idempotency_key(i:Issue)->str:return f"partiful:evidence:{i.number}"
 def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
  raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"]));return raw if isinstance(raw,list) else raw.get("tasks",[])
 def create_card(i:Issue,run:Callable[[list[str]],str]=_run)->str:
- v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",idempotency_key(i),"--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
+ v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"worktree:{ROOT}","--branch",f"partiful/evidence-{i.number}","--tenant","partiful-wayfinder","--idempotency-key",idempotency_key(i),"--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
 def create_missing_cards(issues:Iterable[Issue],cards:Iterable[dict],run:Callable[[list[str]],str]=_run)->list[str]:
  existing={str(card.get("idempotency_key",card.get("idempotencyKey",""))) for card in cards if str(card.get("status",card.get("state",""))).lower() not in {"done","closed","cancelled","completed","archived"}}
  return [create_card(issue,run) for issue in issues if idempotency_key(issue) not in existing]
