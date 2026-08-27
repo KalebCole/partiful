@@ -1,0 +1,3572 @@
+{
+  "commands": [
+    {
+      "id": "CMD-001",
+      "disposition": "cli-only",
+      "help": "Authenticate an account in an interactive terminal.",
+      "failure_types": [
+        "input.invalid",
+        "auth.human_required",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "auth login"
+      },
+      "operation": "AuthLoginInteractive",
+      "authorization": "private interactive terminal",
+      "risk": "interactive",
+      "dry_run": false,
+      "mcp": null,
+      "input_type": "struct {}",
+      "result_type": "domain.AuthState",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "authenticated",
+          "token_state",
+          "expires_at"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "token_state": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "expiring",
+              "expired",
+              "missing"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-002",
+      "disposition": "paired",
+      "help": "Show the current authentication state.",
+      "failure_types": [
+        "input.invalid",
+        "auth.human_required",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "auth status"
+      },
+      "operation": "GetAuthStatus",
+      "authorization": "local credentials; refresh when required",
+      "risk": "credential-refresh",
+      "dry_run": false,
+      "mcp": {
+        "name": "auth_status",
+        "hints": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "struct {}",
+      "result_type": "domain.AuthState",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "authenticated",
+          "token_state",
+          "expires_at"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "token_state": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "expiring",
+              "expired",
+              "missing"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-003",
+      "disposition": "paired",
+      "help": "Remove locally stored credentials.",
+      "failure_types": [
+        "input.invalid",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "auth logout",
+        "flags": [
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "Logout",
+      "authorization": "local credential store",
+      "risk": "credential-delete",
+      "dry_run": true,
+      "mcp": {
+        "name": "auth_logout",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true,
+          "open_world": false
+        }
+      },
+      "input_type": "domain.LogoutInput",
+      "result_type": "domain.AuthState",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "authenticated",
+          "token_state",
+          "expires_at"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "token_state": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "expiring",
+              "expired",
+              "missing"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-004",
+      "disposition": "paired",
+      "help": "List events for the authenticated account.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "events list",
+        "flags": [
+          {
+            "name": "when",
+            "field": "when",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "limit",
+            "field": "limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "cursor",
+            "field": "cursor",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "all",
+            "field": "all",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "max-items",
+            "field": "max_items",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "ListEvents",
+      "authorization": "authenticated account",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "events_list",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.ListEventsInput",
+      "result_type": "domain.EventsResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "when"
+        ],
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "when": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "past"
+            ]
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "events",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "event_id",
+                "title",
+                "start",
+                "end",
+                "timezone",
+                "state",
+                "user_role",
+                "my_rsvp"
+              ],
+              "properties": {
+                "end": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "event_id": {
+                  "type": "string"
+                },
+                "my_rsvp": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "ready-to-send",
+                    "sending",
+                    "send-error",
+                    "delivery-error",
+                    "sent",
+                    "interested",
+                    "waitlist",
+                    "maybe",
+                    "declined",
+                    "going",
+                    "pending-approval",
+                    "approved",
+                    "withdrawn",
+                    "waitlisted-for-approval",
+                    "rejected",
+                    "responded-to-find-a-time"
+                  ]
+                },
+                "start": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "timezone": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "user_role": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-005",
+      "disposition": "paired",
+      "help": "Get one event by its public event ID.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "events get",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ]
+      },
+      "operation": "GetEvent",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "events_get",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.GetEventInput",
+      "result_type": "domain.EventResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "title",
+              "start",
+              "end",
+              "timezone",
+              "state",
+              "user_role",
+              "my_rsvp",
+              "description",
+              "location",
+              "address",
+              "visibility",
+              "guest_limit",
+              "poster",
+              "links"
+            ],
+            "properties": {
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "guest_limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "links": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "url"
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "my_rsvp": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "ready-to-send",
+                  "sending",
+                  "send-error",
+                  "delivery-error",
+                  "sent",
+                  "interested",
+                  "waitlist",
+                  "maybe",
+                  "declined",
+                  "going",
+                  "pending-approval",
+                  "approved",
+                  "withdrawn",
+                  "waitlisted-for-approval",
+                  "rejected",
+                  "responded-to-find-a-time"
+                ]
+              },
+              "poster": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "poster_id",
+                  "name",
+                  "url",
+                  "content_type",
+                  "width",
+                  "height",
+                  "tags",
+                  "categories"
+                ],
+                "properties": {
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "content_type": {
+                    "type": "string"
+                  },
+                  "height": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "poster_id": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "start": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "timezone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "user_role": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "visibility": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "private",
+                  "public"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-006",
+      "disposition": "paired",
+      "help": "Create an event.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "events create",
+        "flags": [
+          {
+            "name": "title",
+            "field": "title",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "start",
+            "field": "start",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "timezone",
+            "field": "timezone",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "end",
+            "field": "end",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "description",
+            "field": "description",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "location",
+            "field": "location",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "visibility",
+            "field": "visibility",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "guest-limit",
+            "field": "guest_limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "link",
+            "field": "links",
+            "required": false,
+            "repeated": true,
+            "content_source": false
+          },
+          {
+            "name": "poster-id",
+            "field": "poster_id",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "CreateEvent",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "write",
+      "dry_run": true,
+      "mcp": {
+        "name": "events_create",
+        "hints": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CreateEventInput",
+      "result_type": "domain.SubmittedResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "start",
+          "timezone"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "guest_limit": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label",
+                "url"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "poster_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "format": "iana-timezone"
+          },
+          "title": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "private",
+              "public"
+            ]
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "submitted"
+        ],
+        "properties": {
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-007",
+      "disposition": "paired",
+      "help": "Update selected event fields.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "events update",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "title",
+            "field": "title",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "description",
+            "field": "description",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "start",
+            "field": "start",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "end",
+            "field": "end",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "timezone",
+            "field": "timezone",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "guest-limit",
+            "field": "guest_limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "link",
+            "field": "links",
+            "required": false,
+            "repeated": true,
+            "content_source": false
+          },
+          {
+            "name": "poster-id",
+            "field": "poster_id",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "clear-description",
+            "field": "description",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "clear-end",
+            "field": "end",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "clear-guest-limit",
+            "field": "guest_limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "clear-links",
+            "field": "links",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "clear-poster",
+            "field": "poster_id",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "UpdateEvent",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "events_update",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.UpdateEventInput",
+      "result_type": "domain.UpdateEventResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "guest_limit": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "links": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label",
+                "url"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "poster_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "format": "iana-timezone"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "fields",
+          "submitted"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-008",
+      "disposition": "paired",
+      "help": "Cancel an event.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "events cancel",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "message",
+            "field": "message",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "notify-guests",
+            "field": "notify_guests",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "CancelEvent",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "events_cancel",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CancelEventInput",
+      "result_type": "domain.CancelEventResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notify_guests": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "notify_guests",
+          "submitted"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "notify_guests": {
+            "type": "boolean"
+          },
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-009",
+      "disposition": "paired",
+      "help": "List guests for an event.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "guests list",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "limit",
+            "field": "limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "cursor",
+            "field": "cursor",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "all",
+            "field": "all",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "max-items",
+            "field": "max_items",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "ListGuests",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "guests_list",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.ListGuestsInput",
+      "result_type": "domain.GuestsResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "guests",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "guests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "display_name",
+                "rsvp_status",
+                "party_size",
+                "cohost"
+              ],
+              "properties": {
+                "cohost": {
+                  "type": "boolean"
+                },
+                "display_name": {
+                  "type": "string"
+                },
+                "party_size": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "rsvp_status": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "ready-to-send",
+                    "sending",
+                    "send-error",
+                    "delivery-error",
+                    "sent",
+                    "interested",
+                    "waitlist",
+                    "maybe",
+                    "declined",
+                    "going",
+                    "pending-approval",
+                    "approved",
+                    "withdrawn",
+                    "waitlisted-for-approval",
+                    "rejected",
+                    "responded-to-find-a-time"
+                  ]
+                }
+              }
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-010",
+      "disposition": "paired",
+      "help": "Invite one contact to an event.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure",
+        "match.ambiguous"
+      ],
+      "cli": {
+        "path": "guests invite",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "contact-ref",
+            "field": "contact_ref",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "contact",
+            "field": "contact",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "message-file",
+            "field": "message",
+            "required": false,
+            "repeated": false,
+            "content_source": true
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "InviteGuest",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "write",
+      "dry_run": true,
+      "mcp": {
+        "name": "guests_invite",
+        "hints": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.InviteGuestInput",
+      "result_type": "domain.SubmittedResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact_ref"
+            ],
+            "properties": {
+              "contact_ref": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact"
+            ],
+            "properties": {
+              "contact": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "contact_selector"
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "submitted"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-011",
+      "disposition": "paired",
+      "help": "Get the authenticated account RSVP for an event.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "rsvp get",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ]
+      },
+      "operation": "GetRsvp",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "rsvp_get",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.GetEventInput",
+      "result_type": "domain.RSVPResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rsvp"
+        ],
+        "properties": {
+          "rsvp": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "status"
+            ],
+            "properties": {
+              "event_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "ready-to-send",
+                  "sending",
+                  "send-error",
+                  "delivery-error",
+                  "sent",
+                  "interested",
+                  "waitlist",
+                  "maybe",
+                  "declined",
+                  "going",
+                  "pending-approval",
+                  "approved",
+                  "withdrawn",
+                  "waitlisted-for-approval",
+                  "rejected",
+                  "responded-to-find-a-time"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-012",
+      "disposition": "paired",
+      "help": "Set the authenticated account RSVP intent.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "rsvp set",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "status",
+            "field": "status",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "display-name",
+            "field": "display_name",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "party-size",
+            "field": "party_size",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "plus-one",
+            "field": "plus_ones",
+            "required": false,
+            "repeated": true,
+            "content_source": false
+          },
+          {
+            "name": "timezone",
+            "field": "timezone",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "message-file",
+            "field": "message",
+            "required": false,
+            "repeated": false,
+            "content_source": true
+          },
+          {
+            "name": "questionnaire-response-file",
+            "field": "questionnaire_response",
+            "required": false,
+            "repeated": false,
+            "content_source": true
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "SetRsvp",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "rsvp_set",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.SetRSVPInput",
+      "result_type": "domain.SetRSVPResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "status",
+              "display_name",
+              "party_size",
+              "timezone"
+            ],
+            "properties": {
+              "display_name": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "party_size": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "plus_ones": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "questionnaire_response": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "going"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "format": "iana-timezone"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "status",
+              "display_name",
+              "party_size",
+              "timezone"
+            ],
+            "properties": {
+              "display_name": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "party_size": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "plus_ones": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "questionnaire_response": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not-going"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "format": "iana-timezone"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "status"
+            ],
+            "properties": {
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "interested"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "status"
+            ],
+            "properties": {
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not-interested"
+                ]
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "status"
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "intent",
+          "submitted"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "going",
+              "not-going",
+              "interested",
+              "not-interested"
+            ]
+          },
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-013",
+      "disposition": "paired",
+      "help": "List account contacts using opaque contact references.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "contacts list",
+        "flags": [
+          {
+            "name": "query",
+            "field": "query",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "limit",
+            "field": "limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "cursor",
+            "field": "cursor",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "all",
+            "field": "all",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "max-items",
+            "field": "max_items",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "ListContacts",
+      "authorization": "authenticated account",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "contacts_list",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.ListContactsInput",
+      "result_type": "domain.ContactsResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "query": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contacts",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "contact_ref",
+                "display_name",
+                "shared_event_count"
+              ],
+              "properties": {
+                "contact_ref": {
+                  "type": "string"
+                },
+                "display_name": {
+                  "type": "string"
+                },
+                "shared_event_count": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-014",
+      "disposition": "paired",
+      "help": "Invite a contact as a cohost.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure",
+        "match.ambiguous"
+      ],
+      "cli": {
+        "path": "cohosts invite",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "contact-ref",
+            "field": "contact_ref",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "contact",
+            "field": "contact",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "InviteCohost",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "write",
+      "dry_run": true,
+      "mcp": {
+        "name": "cohosts_invite",
+        "hints": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CohostInput",
+      "result_type": "domain.CohostResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact_ref"
+            ],
+            "properties": {
+              "contact_ref": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact"
+            ],
+            "properties": {
+              "contact": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "contact_selector"
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "cohost"
+        ],
+        "properties": {
+          "cohost": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "display_name",
+              "status"
+            ],
+            "properties": {
+              "display_name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "invited",
+                  "revoked",
+                  "removed"
+                ]
+              }
+            }
+          },
+          "event_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-015",
+      "disposition": "paired",
+      "help": "Revoke a pending cohost invitation.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure",
+        "match.ambiguous"
+      ],
+      "cli": {
+        "path": "cohosts revoke-invite",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "contact-ref",
+            "field": "contact_ref",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "contact",
+            "field": "contact",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "RevokeCohostInvite",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "cohosts_revoke_invite",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CohostInput",
+      "result_type": "domain.CohostResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact_ref"
+            ],
+            "properties": {
+              "contact_ref": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact"
+            ],
+            "properties": {
+              "contact": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "contact_selector"
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "cohost"
+        ],
+        "properties": {
+          "cohost": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "display_name",
+              "status"
+            ],
+            "properties": {
+              "display_name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "invited",
+                  "revoked",
+                  "removed"
+                ]
+              }
+            }
+          },
+          "event_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-016",
+      "disposition": "paired",
+      "help": "Remove a current cohost.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure",
+        "match.ambiguous"
+      ],
+      "cli": {
+        "path": "cohosts remove",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "contact-ref",
+            "field": "contact_ref",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "contact",
+            "field": "contact",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "RemoveCohost",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "cohosts_remove",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CohostInput",
+      "result_type": "domain.CohostResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact_ref"
+            ],
+            "properties": {
+              "contact_ref": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "contact"
+            ],
+            "properties": {
+              "contact": {
+                "type": "string"
+              },
+              "dry_run": {
+                "type": "boolean",
+                "default": false
+              },
+              "event_id": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "contact_selector"
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "cohost"
+        ],
+        "properties": {
+          "cohost": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "display_name",
+              "status"
+            ],
+            "properties": {
+              "display_name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "invited",
+                  "revoked",
+                  "removed"
+                ]
+              }
+            }
+          },
+          "event_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-017",
+      "disposition": "paired",
+      "help": "Create a cohost access link.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "cohosts link create",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "CreateCohostLink",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "write",
+      "dry_run": true,
+      "mcp": {
+        "name": "cohosts_link_create",
+        "hints": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CohostLinkInput",
+      "result_type": "domain.CohostLinkResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "event_id": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "link"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "link": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "revoked"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-018",
+      "disposition": "paired",
+      "help": "Revoke a cohost access link.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "cohosts link revoke",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "RevokeCohostLink",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "cohosts_link_revoke",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.CohostLinkInput",
+      "result_type": "domain.CohostLinkResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "event_id": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "link"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "link": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "revoked"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-019",
+      "disposition": "paired",
+      "help": "Send one blast to all event guests.",
+      "failure_types": [
+        "input.invalid",
+        "auth.required",
+        "auth.expired",
+        "auth.store_unavailable",
+        "auth.persistence_failed",
+        "auth.busy",
+        "permission.denied",
+        "resource.not_found",
+        "state.conflict",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "blasts send",
+        "positionals": [
+          {
+            "name": "event-id",
+            "field": "event_id",
+            "required": true
+          }
+        ],
+        "flags": [
+          {
+            "name": "audience",
+            "field": "audience",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "message-file",
+            "field": "message",
+            "required": true,
+            "repeated": false,
+            "content_source": true
+          },
+          {
+            "name": "show-on-event-page",
+            "field": "show_on_event_page",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "dry-run",
+            "field": "dry_run",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "SendBlast",
+      "authorization": "authenticated account; backend decides access",
+      "risk": "destructive-write",
+      "dry_run": true,
+      "mcp": {
+        "name": "blasts_send",
+        "hints": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.SendBlastInput",
+      "result_type": "domain.BlastResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "audience",
+          "message"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "enum": [
+              "all-guests"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "show_on_event_page": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "submitted",
+          "audience",
+          "show_on_event_page",
+          "recipient_status"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "enum": [
+              "all-guests"
+            ]
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "recipient_status": {
+            "type": "string",
+            "enum": [
+              "not-reported"
+            ]
+          },
+          "show_on_event_page": {
+            "type": "boolean"
+          },
+          "submitted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-020",
+      "disposition": "paired",
+      "help": "List the public poster catalog.",
+      "failure_types": [
+        "input.invalid",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "posters list",
+        "flags": [
+          {
+            "name": "limit",
+            "field": "limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "cursor",
+            "field": "cursor",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "all",
+            "field": "all",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "max-items",
+            "field": "max_items",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "ListPosters",
+      "authorization": "none",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "posters_list",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.ListPostersInput",
+      "result_type": "domain.PostersResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "posters",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "poster_id",
+                "name",
+                "url",
+                "content_type",
+                "width",
+                "height",
+                "tags",
+                "categories"
+              ],
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "content_type": {
+                  "type": "string"
+                },
+                "height": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "poster_id": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "url": {
+                  "type": "string"
+                },
+                "width": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-021",
+      "disposition": "paired",
+      "help": "Search the public poster catalog.",
+      "failure_types": [
+        "input.invalid",
+        "remote.unavailable",
+        "remote.rate_limited",
+        "contract.protocol_changed",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "posters search",
+        "flags": [
+          {
+            "name": "query",
+            "field": "query",
+            "required": true,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "limit",
+            "field": "limit",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "cursor",
+            "field": "cursor",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "all",
+            "field": "all",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          },
+          {
+            "name": "max-items",
+            "field": "max_items",
+            "required": false,
+            "repeated": false,
+            "content_source": false
+          }
+        ]
+      },
+      "operation": "SearchPosters",
+      "authorization": "none",
+      "risk": "read",
+      "dry_run": false,
+      "mcp": {
+        "name": "posters_search",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": true
+        }
+      },
+      "input_type": "domain.SearchPostersInput",
+      "result_type": "domain.PostersResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "default": false
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "posters",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "poster_id",
+                "name",
+                "url",
+                "content_type",
+                "width",
+                "height",
+                "tags",
+                "categories"
+              ],
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "content_type": {
+                  "type": "string"
+                },
+                "height": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "poster_id": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "url": {
+                  "type": "string"
+                },
+                "width": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-022",
+      "disposition": "paired",
+      "help": "Show command input, result, and adapter schemas.",
+      "failure_types": [
+        "input.invalid",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "schema",
+        "positionals": [
+          {
+            "name": "command.path",
+            "field": "command",
+            "required": false
+          }
+        ]
+      },
+      "operation": "GetCommandSchema",
+      "authorization": "none",
+      "risk": "diagnostic",
+      "dry_run": false,
+      "mcp": {
+        "name": "schema",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": false
+        }
+      },
+      "input_type": "domain.CommandSchemaInput",
+      "result_type": "domain.CommandSchemaResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "commands",
+          "mcp_tools",
+          "cli_only_commands"
+        ],
+        "properties": {
+          "cli_only_commands": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "cli_path",
+                "help",
+                "input_schema",
+                "result_schema",
+                "failure_types",
+                "authorization",
+                "risk",
+                "dry_run"
+              ],
+              "properties": {
+                "authorization": {
+                  "type": "string"
+                },
+                "cli_path": {
+                  "type": "string"
+                },
+                "dry_run": {
+                  "type": "boolean"
+                },
+                "failure_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false
+                  }
+                },
+                "help": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "input_schema": {
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "mcp": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "hints"
+                  ],
+                  "properties": {
+                    "hints": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "read_only",
+                        "destructive",
+                        "idempotent",
+                        "open_world"
+                      ],
+                      "properties": {
+                        "destructive": {
+                          "type": "boolean"
+                        },
+                        "idempotent": {
+                          "type": "boolean"
+                        },
+                        "open_world": {
+                          "type": "boolean"
+                        },
+                        "read_only": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "positionals": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false
+                  }
+                },
+                "result_schema": {
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "risk": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "mcp_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-023",
+      "disposition": "paired",
+      "help": "Run local installation and credential diagnostics.",
+      "failure_types": [
+        "input.invalid",
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "doctor"
+      },
+      "operation": "RunDoctor",
+      "authorization": "none; credentials are inspected but not printed",
+      "risk": "diagnostic",
+      "dry_run": false,
+      "mcp": {
+        "name": "doctor",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": false
+        }
+      },
+      "input_type": "struct {}",
+      "result_type": "domain.DoctorResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "healthy",
+          "checks"
+        ],
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "status",
+                "message",
+                "remediation"
+              ],
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "remediation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pass",
+                    "warn",
+                    "fail"
+                  ]
+                }
+              }
+            }
+          },
+          "healthy": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "CMD-024",
+      "disposition": "paired",
+      "help": "Show CLI and contract revisions.",
+      "failure_types": [
+        "internal.failure"
+      ],
+      "cli": {
+        "path": "version",
+        "aliases": [
+          "--version"
+        ]
+      },
+      "operation": "GetVersion",
+      "authorization": "none",
+      "risk": "diagnostic",
+      "dry_run": false,
+      "mcp": {
+        "name": "version",
+        "hints": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true,
+          "open_world": false
+        }
+      },
+      "input_type": "struct {}",
+      "result_type": "domain.VersionResult",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cli_version",
+          "command_contract_revision",
+          "transport_contract_revision"
+        ],
+        "properties": {
+          "cli_version": {
+            "type": "string"
+          },
+          "command_contract_revision": {
+            "type": "string"
+          },
+          "transport_contract_revision": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
