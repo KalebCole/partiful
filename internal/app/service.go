@@ -79,15 +79,12 @@ func (service *Service) Invoke(ctx context.Context, operation domain.OperationID
 			return nil, evidenceGateOpen()
 		}
 	}
-	result, invocation, err := handler.invoke(ctx, input)
+	result, _, err := handler.invoke(ctx, input)
 	if err != nil {
-		if identity := handler.errorGate(); identity != "" && !service.gates.Allows(identity) {
+		if identity := handler.errorGate(); identity != "" && !service.gates.Allows(identity) && !hasEvidencedClassification(err) {
 			return nil, evidenceClaimOpen()
 		}
 		return nil, NormalizeError(err)
-	}
-	if identity := handler.outcomeGate(); identity != "" && invocation.MutationAttempts() != 0 && !service.gates.Allows(identity) {
-		return nil, evidenceClaimOpen()
 	}
 	return result, nil
 }

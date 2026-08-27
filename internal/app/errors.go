@@ -53,6 +53,24 @@ func NormalizeError(err error) error {
 	return &domain.Error{Type: domain.ErrorInternalFailure, Code: "INTERNAL_FAILURE", Message: "the operation failed"}
 }
 
+func hasEvidencedClassification(err error) bool {
+	var applicationError *domain.Error
+	if errors.As(err, &applicationError) {
+		return true
+	}
+	var failure *transport.ProtocolFailure
+	if !errors.As(err, &failure) {
+		return false
+	}
+	switch domain.ErrorType(failure.Class) {
+	case domain.ErrorPermissionDenied, domain.ErrorResourceNotFound, domain.ErrorStateConflict,
+		domain.ErrorRemoteUnavailable, domain.ErrorRemoteRateLimited, domain.ErrorContractProtocolChanged:
+		return true
+	default:
+		return false
+	}
+}
+
 func stableErrorCode(errorType domain.ErrorType) string {
 	switch errorType {
 	case domain.ErrorPermissionDenied:

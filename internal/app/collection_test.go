@@ -35,6 +35,18 @@ func TestSliceCollectionHonorsRetrievalControlsAndCursorPosition(t *testing.T) {
 	}
 }
 
+func TestSliceCollectionEmptyAndExactLimitAreTerminal(t *testing.T) {
+	t.Parallel()
+	codec, _ := NewCursorCodec([]byte("installation-secret"))
+	scope := CursorScope{Operation: domain.OperationListPosters}
+	for _, items := range [][]string{nil, {"one", "two"}} {
+		page, err := SliceCollection(codec, scope, domain.CollectionInput{Limit: 2}, items)
+		if err != nil || page.HasMore || page.NextCursor != nil || !reflect.DeepEqual(page.Items, items) {
+			t.Fatalf("SliceCollection(%v) = %#v, %v", items, page, err)
+		}
+	}
+}
+
 func TestValidateCollectionInputRejectsInvalidControlCombinations(t *testing.T) {
 	t.Parallel()
 

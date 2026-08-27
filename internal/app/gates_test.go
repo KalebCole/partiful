@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -13,7 +15,7 @@ import (
 	"github.com/KalebCole/partiful/internal/transport"
 )
 
-func TestNewGateManifestRejectsMissingAndDuplicateFullIdentity(t *testing.T) {
+func TestNewGateManifestRejectsInvalidEntries(t *testing.T) {
 	t.Parallel()
 
 	valid := []Gate{
@@ -32,6 +34,10 @@ func TestNewGateManifestRejectsMissingAndDuplicateFullIdentity(t *testing.T) {
 		{name: "missing", entries: []Gate{{State: GateOpenClaim, Source: "/source"}}, want: "missing full identity"},
 		{name: "partial endpoint identity", entries: []Gate{{Identity: "OP11-ENDPOINT-ERRORS", State: GateOpenClaim, Source: "/source"}}, want: "missing full identity"},
 		{name: "duplicate", entries: append(valid, valid[0]), want: "duplicate full identity"},
+		{name: "whitespace identity", entries: []Gate{{Identity: " OP11-ENDPOINT-ERRORS:getGuests", State: GateOpenClaim, Source: "/source"}}, want: "non-canonical identity"},
+		{name: "unknown operation", entries: []Gate{{Identity: "OP11-ENDPOINT-ERRORS:notInTheContract", State: GateOpenClaim, Source: "/source"}}, want: "unknown operation"},
+		{name: "unknown state", entries: []Gate{{Identity: "OP11-ENDPOINT-ERRORS:getGuests", State: GateState("MAYBE"), Source: "/source"}}, want: "invalid state"},
+		{name: "empty source", entries: []Gate{{Identity: "OP11-ENDPOINT-ERRORS:getGuests", State: GateOpenClaim, Source: "  "}}, want: "empty source"},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
@@ -56,13 +62,19 @@ func TestDefaultGateManifestIsCompleteAndExplicit(t *testing.T) {
 	}
 
 	wantStates := map[string]GateState{
-		"OP11-EVENT-LIST-REQUEST":            GateOpenOperation,
-		"OP11-AUTH-REQUESTS:refreshToken":    GateOpenPath,
-		"OP11-ENDPOINT-ERRORS:getGuests":     GateOpenClaim,
-		"OP11-MUTATION-OUTCOME:createEvent":  GateOpenClaim,
-		"OP11-UPLOAD-PHOTO":                  GateDormant,
-		"OP11-PROJECTION:EVENT-LIST-SUMMARY": GateOpenOperation,
-		"COLLECTION-GUEST-PAGE-21":           GateOpenPath,
+		"OP11-EVENT-LIST-REQUEST":                  GateOpenOperation,
+		"OP11-AUTH-REQUESTS:refreshToken":          GateOpenPath,
+		"OP11-ENDPOINT-ERRORS:getGuests":           GateOpenClaim,
+		"OP11-MUTATION-OUTCOME:createEvent":        GateOpenClaim,
+		"OP11-CURRENT-GUEST-VARIANT":               GateOpenClaim,
+		"OP11-RSVP-SPECIAL-PATHS":                  GateOpenOperation,
+		"OP11-COHOST-STATE-READ":                   GateOpenClaim,
+		"OP11-BLAST-FIRESTORE-READS":               GateOpenOperation,
+		"OP11-POSTER-DUPLICATE-ID":                 GateOpenPath,
+		"OP11-UPLOAD-PHOTO":                        GateDormant,
+		"OP15-EVENT-DETAIL-PROJECTION:address":     GateOpenOperation,
+		"OP15-EVENT-DETAIL-PROJECTION:guest_limit": GateOpenOperation,
+		"COLLECTION-GUEST-PAGE-21":                 GateOpenPath,
 	}
 	for identity, want := range wantStates {
 		gate, ok := manifest.Lookup(identity)
@@ -71,14 +83,11 @@ func TestDefaultGateManifestIsCompleteAndExplicit(t *testing.T) {
 		}
 	}
 
-	endpointOperations := []string{
-		"sendAuthCodeTrusted", "getLoginToken", "signInWithCustomToken", "refreshToken", "lookupFirebaseUser",
-		"getMyUpcomingEventsForHomePage", "getMyPastEventsForHomePage", "getEventInfo", "createEvent", "updateEvent", "cancelEvent",
-		"getGuests", "addGuest", "markGuestInterested", "inviteGuest", "setCohostStatus", "getCurrentGuest", "sendBlast",
-		"getContacts", "getPosterCatalog", "queryEvent", "queryGuest", "queryGuestConfig", "createMessage", "createFeedMessage",
-		"updateMessage", "uploadEventPhoto", "putPosterImage",
+	endpointOperations := openAPIOperationIDs(t)
+	mutationOperations := []string{
+		"createEvent", "cancelEvent", "firestorePatchEvent", "addInvitedGuestsAsHost", "addGuest", "markEventInterest",
+		"createCohostRequest", "deleteCohostRequest", "removeCohost", "generateEventCohostLink", "revokeEventCohostLink", "createTextBlast",
 	}
-	mutationOperations := []string{"createEvent", "updateEvent", "cancelEvent", "addGuest", "markGuestInterested", "inviteGuest", "setCohostStatus", "sendBlast", "createMessage", "createFeedMessage", "updateMessage", "putPosterImage"}
 
 	gotEndpoints := identitiesWithPrefix(entries, "OP11-ENDPOINT-ERRORS:")
 	gotMutations := identitiesWithPrefix(entries, "OP11-MUTATION-OUTCOME:")
@@ -96,6 +105,32 @@ func TestDefaultGateManifestIsCompleteAndExplicit(t *testing.T) {
 	if !reflect.DeepEqual(gotMutations, mutationOperations) {
 		t.Fatalf("mutation gates = %v, want %v", gotMutations, mutationOperations)
 	}
+}
+
+func openAPIOperationIDs(t *testing.T) []string {
+	t.Helper()
+	data, err := os.ReadFile("../../spec/partiful.openapi.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document struct {
+		Paths map[string]map[string]struct {
+			OperationID string `json:"operationId"`
+		} `json:"paths"`
+	}
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatal(err)
+	}
+	operations := make([]string, 0)
+	for _, path := range document.Paths {
+		for _, operation := range path {
+			if operation.OperationID != "" {
+				operations = append(operations, operation.OperationID)
+			}
+		}
+	}
+	sort.Strings(operations)
+	return operations
 }
 
 func identitiesWithPrefix(entries []Gate, prefix string) []string {
@@ -129,6 +164,29 @@ func TestServiceChecksEvidenceGatesBeforeTypedDispatch(t *testing.T) {
 	var applicationError *domain.Error
 	if calls != 0 || !errors.As(err, &applicationError) || applicationError.Type != domain.ErrorContractProtocolChanged || applicationError.Code != "EVIDENCE_GATE_OPEN" {
 		t.Fatalf("Invoke(open gate) calls = %d, error = %#v", calls, err)
+	}
+}
+
+func TestServiceOpenPathIsNotUnlockedByClosedSibling(t *testing.T) {
+	t.Parallel()
+	catalog, _ := command.DefaultCatalog()
+	manifest, _ := NewGateManifest([]Gate{
+		{Identity: "TEST:sibling", State: GateClosed, Source: "test"},
+		{Identity: "TEST:path", State: GateOpenPath, Source: "test"},
+	})
+	service := NewService(catalog, manifest)
+	calls := 0
+	_ = BindOperation(service, OperationSpec[struct{}, domain.VersionResult]{
+		Operation: domain.OperationGetVersion, RequiredGates: []string{"TEST:sibling", "TEST:path"},
+		Execute: func(context.Context, *Invocation, struct{}) (domain.VersionResult, error) {
+			calls++
+			return domain.VersionResult{}, nil
+		},
+	})
+	_, err := service.Invoke(context.Background(), domain.OperationGetVersion, struct{}{})
+	var applicationError *domain.Error
+	if calls != 0 || !errors.As(err, &applicationError) || applicationError.Code != "EVIDENCE_GATE_OPEN" {
+		t.Fatalf("Invoke(open path with closed sibling) calls = %d, error = %#v", calls, err)
 	}
 }
 
@@ -177,6 +235,46 @@ func TestServiceUsesOneTypedHandlerAndSanitizesOpenClaims(t *testing.T) {
 	}
 }
 
+func TestServiceOpenClaimPermitsEvidencedErrorsAndNarrowMutationResult(t *testing.T) {
+	t.Parallel()
+	catalog, _ := command.DefaultCatalog()
+	manifest, _ := NewGateManifest([]Gate{
+		{Identity: "TEST:error", State: GateOpenClaim, Source: "test"},
+		{Identity: "TEST:outcome", State: GateOpenClaim, Source: "test"},
+	})
+
+	t.Run("evidenced error", func(t *testing.T) {
+		service := NewService(catalog, manifest)
+		_ = BindOperation(service, OperationSpec[struct{}, domain.VersionResult]{
+			Operation: domain.OperationGetVersion, ErrorGate: "TEST:error",
+			Execute: func(context.Context, *Invocation, struct{}) (domain.VersionResult, error) {
+				return domain.VersionResult{}, &transport.ProtocolFailure{Class: string(domain.ErrorRemoteRateLimited), DispatchState: transport.DispatchStarted}
+			},
+		})
+		_, err := service.Invoke(context.Background(), domain.OperationGetVersion, struct{}{})
+		var applicationError *domain.Error
+		if !errors.As(err, &applicationError) || applicationError.Type != domain.ErrorRemoteRateLimited {
+			t.Fatalf("Invoke(evidenced error) = %#v", err)
+		}
+	})
+
+	t.Run("narrow intent result", func(t *testing.T) {
+		service := NewService(catalog, manifest)
+		_ = BindOperation(service, OperationSpec[struct{}, domain.VersionResult]{
+			Operation: domain.OperationGetVersion, OutcomeGate: "TEST:outcome",
+			Execute: func(_ context.Context, invocation *Invocation, _ struct{}) (domain.VersionResult, error) {
+				return DispatchMutation(invocation, func() (domain.VersionResult, error) {
+					return domain.VersionResult{CLIVersion: "submitted"}, nil
+				})
+			},
+		})
+		result, err := service.Invoke(context.Background(), domain.OperationGetVersion, struct{}{})
+		if err != nil || result.(domain.VersionResult).CLIVersion != "submitted" {
+			t.Fatalf("Invoke(narrow result) = %#v, %v", result, err)
+		}
+	})
+}
+
 func TestMutationDispatchAllowsAtMostOneAttempt(t *testing.T) {
 	t.Parallel()
 	invocation := &Invocation{}
@@ -193,6 +291,54 @@ func TestMutationDispatchAllowsAtMostOneAttempt(t *testing.T) {
 		return "retried", nil
 	}); err == nil || calls != 1 || invocation.MutationAttempts() != 1 {
 		t.Fatalf("second dispatch error = %v; calls %d attempts %d", err, calls, invocation.MutationAttempts())
+	}
+}
+
+func TestServiceMutationFaultsMakeAtMostOneWriteAndNoReadback(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		before     error
+		writeFault error
+		wantWrites int
+	}{
+		{name: "before write", before: &domain.Error{Type: domain.ErrorInputInvalid, Code: "INVALID", Message: "invalid"}},
+		{name: "during write", writeFault: &transport.ProtocolFailure{Class: string(domain.ErrorRemoteUnavailable), DispatchState: transport.DispatchStarted}, wantWrites: 1},
+		{name: "after response loss", writeFault: &transport.ProtocolFailure{Class: "unknown.response", DispatchState: transport.DispatchStarted}, wantWrites: 1},
+		{name: "accepted intent without optional readback", wantWrites: 1},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			catalog, _ := command.DefaultCatalog()
+			manifest, _ := NewGateManifest([]Gate{
+				{Identity: "TEST:error", State: GateOpenClaim, Source: "test"},
+				{Identity: "TEST:outcome", State: GateOpenClaim, Source: "test"},
+			})
+			service := NewService(catalog, manifest)
+			writes, readbacks := 0, 0
+			_ = BindOperation(service, OperationSpec[struct{}, domain.VersionResult]{
+				Operation: domain.OperationGetVersion, ErrorGate: "TEST:error", OutcomeGate: "TEST:outcome",
+				Execute: func(_ context.Context, invocation *Invocation, _ struct{}) (domain.VersionResult, error) {
+					if test.before != nil {
+						return domain.VersionResult{}, test.before
+					}
+					return DispatchMutation(invocation, func() (domain.VersionResult, error) {
+						writes++
+						return domain.VersionResult{CLIVersion: "submitted"}, test.writeFault
+					})
+				},
+			})
+			result, err := service.Invoke(context.Background(), domain.OperationGetVersion, struct{}{})
+			if writes != test.wantWrites || readbacks != 0 {
+				t.Fatalf("writes = %d, readbacks = %d; want %d, 0", writes, readbacks, test.wantWrites)
+			}
+			if test.before == nil && test.writeFault == nil && (err != nil || result.(domain.VersionResult).CLIVersion != "submitted") {
+				t.Fatalf("accepted intent = %#v, %v", result, err)
+			}
+			if (test.before != nil || test.writeFault != nil) && err == nil {
+				t.Fatal("faulted mutation succeeded")
+			}
+		})
 	}
 }
 
