@@ -192,7 +192,7 @@ func ordinaryBlastGroups(guests []transport.GuestDocument) []transport.TextBlast
 	groups := make([]transport.TextBlastGroup, 0, len(orderedNames))
 	for _, name := range orderedNames {
 		guestIDs := byName[name]
-		if len(guestIDs) == 0 || (name == "invited" && len(guestIDs) > 100) {
+		if len(guestIDs) == 0 {
 			continue
 		}
 		groups = append(groups, transport.TextBlastGroup{Name: name, GuestIDs: guestIDs})

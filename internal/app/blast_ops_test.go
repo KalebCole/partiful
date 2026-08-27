@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -206,6 +207,38 @@ func TestSendBlastDerivesOrdinaryAudienceAfterBoundedReadsAndDispatchesOnce(t *t
 	if credentials.calls != 1 || callable.getCalls != 1 || callable.createCalls != 1 || firestore.getEventCalls != 1 || firestore.guestListCalls != 2 || firestore.hostListCalls != 2 {
 		t.Fatalf("calls = credentials:%d get:%d create:%d event-doc:%d guests:%d hosts:%d", credentials.calls, callable.getCalls, callable.createCalls, firestore.getEventCalls, firestore.guestListCalls, firestore.hostListCalls)
 	}
+}
+
+func TestSendBlastIncludesAllInvitedRecipientsWithoutInventedCap(t *testing.T) {
+	future := time.Now().Add(time.Hour)
+	status := "SENT"
+	guests := make([]transport.GuestDocument, 101)
+	for index := range guests {
+		guests[index] = transport.GuestDocument{GuestID: transport.GuestID(fmt.Sprintf("guest-%d", index)), Status: &status}
+	}
+	callable := &blastCallable{event: transport.GetEventResult{Event: transport.EventDetail{EventSummary: transport.EventSummary{EventID: "event", Start: &future}}}}
+	firestore := &blastFirestore{
+		event:      transport.EventDocument{EventID: "event", Fields: map[string]transport.FieldValue{}},
+		guestPages: []transport.GuestDocumentPage{{Documents: guests}},
+		hostPages:  []transport.HostMessageDocumentPage{{}},
+	}
+	service := blastService(t, closedEventGates(t), &blastCredentials{}, callable, firestore)
+
+	_, err := service.Invoke(context.Background(), domain.OperationSendBlast, domain.SendBlastInput{EventID: "event", Audience: "all-guests", Message: "content"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if callable.request == nil || len(callable.request.Groups) != 1 || callable.request.Groups[0].Name != "invited" || !reflect.DeepEqual(callable.request.Groups[0].GuestIDs, guestIDs(guests)) {
+		t.Fatalf("request = %#v", callable.request)
+	}
+}
+
+func guestIDs(guests []transport.GuestDocument) []transport.GuestID {
+	ids := make([]transport.GuestID, len(guests))
+	for index := range guests {
+		ids[index] = guests[index].GuestID
+	}
+	return ids
 }
 
 func TestSendBlastRejectsInvalidInputBeforeAuthentication(t *testing.T) {
