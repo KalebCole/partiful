@@ -1,0 +1,319 @@
+## auth login
+Usage: partiful auth login
+
+Authenticate an account in an interactive terminal.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## auth status
+Usage: partiful auth status
+
+Show the current authentication state.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## auth logout
+Usage: partiful auth logout [flags]
+
+Remove locally stored credentials.
+
+Flags:
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## events list
+Usage: partiful events list [flags]
+
+List events for the authenticated account.
+
+Flags:
+  --when
+  --limit
+  --cursor
+  --all
+  --max-items
+  --json
+  --plain
+  --no-input
+  --version
+## events get
+Usage: partiful events get <event-id>
+
+Get one event by its public event ID.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## events create
+Usage: partiful events create [flags]
+
+Create an event.
+
+Flags:
+  --title
+  --start
+  --timezone
+  --end
+  --description
+  --location
+  --visibility
+  --guest-limit
+  --link
+  --poster-id
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## events update
+Usage: partiful events update <event-id> [flags]
+
+Update selected event fields.
+
+Flags:
+  --title
+  --description
+  --start
+  --end
+  --timezone
+  --guest-limit
+  --link
+  --poster-id
+  --clear-description
+  --clear-end
+  --clear-guest-limit
+  --clear-links
+  --clear-poster
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## events cancel
+Usage: partiful events cancel <event-id> [flags]
+
+Cancel an event.
+
+Flags:
+  --message
+  --notify-guests
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## guests list
+Usage: partiful guests list <event-id> [flags]
+
+List guests for an event.
+
+Flags:
+  --limit
+  --cursor
+  --all
+  --max-items
+  --json
+  --plain
+  --no-input
+  --version
+## guests invite
+Usage: partiful guests invite <event-id> [flags]
+
+Invite one contact to an event.
+
+Flags:
+  --contact-ref
+  --contact
+  --message-file
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## rsvp get
+Usage: partiful rsvp get <event-id>
+
+Get the authenticated account RSVP for an event.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## rsvp set
+Usage: partiful rsvp set <event-id> [flags]
+
+Set the authenticated account RSVP intent.
+
+Flags:
+  --status
+  --display-name
+  --party-size
+  --plus-one
+  --timezone
+  --message-file
+  --questionnaire-response-file
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## contacts list
+Usage: partiful contacts list [flags]
+
+List account contacts using opaque contact references.
+
+Flags:
+  --query
+  --limit
+  --cursor
+  --all
+  --max-items
+  --json
+  --plain
+  --no-input
+  --version
+## cohosts invite
+Usage: partiful cohosts invite <event-id> [flags]
+
+Invite a contact as a cohost.
+
+Flags:
+  --contact-ref
+  --contact
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## cohosts revoke-invite
+Usage: partiful cohosts revoke-invite <event-id> [flags]
+
+Revoke a pending cohost invitation.
+
+Flags:
+  --contact-ref
+  --contact
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## cohosts remove
+Usage: partiful cohosts remove <event-id> [flags]
+
+Remove a current cohost.
+
+Flags:
+  --contact-ref
+  --contact
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## cohosts link create
+Usage: partiful cohosts link create <event-id> [flags]
+
+Create a cohost access link.
+
+Flags:
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## cohosts link revoke
+Usage: partiful cohosts link revoke <event-id> [flags]
+
+Revoke a cohost access link.
+
+Flags:
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## blasts send
+Usage: partiful blasts send <event-id> [flags]
+
+Send one blast to all event guests.
+
+Flags:
+  --audience
+  --message-file
+  --show-on-event-page
+  --dry-run
+  --json
+  --plain
+  --no-input
+  --version
+## posters list
+Usage: partiful posters list [flags]
+
+List the public poster catalog.
+
+Flags:
+  --limit
+  --cursor
+  --all
+  --max-items
+  --json
+  --plain
+  --no-input
+  --version
+## posters search
+Usage: partiful posters search [flags]
+
+Search the public poster catalog.
+
+Flags:
+  --query
+  --limit
+  --cursor
+  --all
+  --max-items
+  --json
+  --plain
+  --no-input
+  --version
+## schema
+Usage: partiful schema [command.path]
+
+Show command input, result, and adapter schemas.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## doctor
+Usage: partiful doctor
+
+Run local installation and credential diagnostics.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
+## version
+Usage: partiful version
+
+Show CLI and contract revisions.
+
+Flags:
+  --json
+  --plain
+  --no-input
+  --version
