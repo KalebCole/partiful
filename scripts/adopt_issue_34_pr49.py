@@ -24,9 +24,13 @@ def _run(command: list[str]) -> str:
 
 
 def inspect_pr(run: Run) -> tuple[str, str]:
-    value = json.loads(run(["gh", "pr", "view", str(PR), "--json", "headRefOid,headRefName"]))
+    value = json.loads(run(["gh", "pr", "view", str(PR), "--json", "headRefOid,headRefName,state,isDraft"]))
     sha = str(value.get("headRefOid", ""))
     branch = str(value.get("headRefName", ""))
+    if value.get("state") != "OPEN":
+        raise RuntimeError("PR #49 is not open")
+    if value.get("isDraft") is not False:
+        raise RuntimeError("PR #49 is still draft")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise RuntimeError("PR #49 returned no valid exact head SHA")
     if branch != PR_BRANCH:

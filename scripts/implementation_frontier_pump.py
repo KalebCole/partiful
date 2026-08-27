@@ -34,9 +34,16 @@ def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
  for c in cards:
   key=c.get("idempotency_key",c.get("idempotencyKey","")); status=str(c.get("status",c.get("state",""))).lower()
   match=re.fullmatch(r"partiful:implementation:(\d+)",key)
-  if match and status not in {"done","closed","cancelled","completed"}: result.append({"issue":int(match.group(1)),"paths":list(parse_allowed_files(c.get("body",""))),"card":c.get("id")})
+  if match and status not in {"done","closed","cancelled","completed"}:
+   issue=int(match.group(1)); paths=list(parse_allowed_files(c.get("body",""))); card=c.get("id")
+   if not paths: raise RuntimeError(f"card {card} for issue #{issue} has no allowed paths")
+   result.append({"issue":issue,"paths":paths,"card":card})
  return result
-def select_wave_for_issues(issues:Iterable[Issue],cards:Iterable[dict])->dict: return select_wave([{"number":i.number,"paths":list(i.allowed_paths)} for i in issues],cards)
+def select_wave_for_issues(issues:Iterable[Issue],cards:Iterable[dict])->dict:
+ issue_list=list(issues)
+ for issue in issue_list:
+  if not issue.allowed_paths: raise RuntimeError(f"issue #{issue.number} has no allowed paths")
+ return select_wave([{"number":i.number,"paths":list(i.allowed_paths)} for i in issue_list],cards)
 def build_implement_body(issue:Issue)->str:
  return f'''Implement GitHub issue #{issue.number}: {issue.url}
 

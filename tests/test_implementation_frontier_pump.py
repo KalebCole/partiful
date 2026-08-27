@@ -9,8 +9,10 @@ from scripts.implementation_frontier_pump import (
     build_implement_body,
     build_review_body,
     create_card,
+    discover_live_cards,
     parse_allowed_files,
     select_frontier,
+    select_wave_for_issues,
 )
 
 
@@ -24,6 +26,21 @@ class SingleCardFrontierTests(unittest.TestCase):
             Issue(38, "closed", "https://example/38", "CLOSED", (IMPLEMENTATION_LABEL,), (), (), ("internal/app/blast_ops.go",)),
         ]
         self.assertEqual([34, 35], [item.number for item in select_frontier(issues)])
+
+    def test_wave_rejects_ready_issue_without_allowed_paths(self) -> None:
+        issue = Issue(34, "app", "https://example/34", "OPEN", (IMPLEMENTATION_LABEL,), (), (), ())
+        with self.assertRaisesRegex(RuntimeError, "issue #34 has no allowed paths"):
+            select_wave_for_issues([issue], [])
+
+    def test_discovery_rejects_active_card_without_allowed_paths(self) -> None:
+        payload = [{
+            "id": "card-34",
+            "status": "running",
+            "idempotency_key": "partiful:implementation:34",
+            "body": "Implement issue #34 without a write-set contract.",
+        }]
+        with self.assertRaisesRegex(RuntimeError, "card card-34 for issue #34 has no allowed paths"):
+            discover_live_cards(lambda _command: json.dumps(payload))
 
 
 class SingleCardContractTests(unittest.TestCase):

@@ -91,6 +91,30 @@ class MergeGateHardeningTests(unittest.TestCase):
 
 
 class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
+    def test_adoption_rejects_non_open_pr(self) -> None:
+        def run(_command: list[str]) -> str:
+            return json.dumps({
+                "headRefOid": "c" * 40,
+                "headRefName": "partiful/issue-34-initial-implement",
+                "state": "CLOSED",
+                "isDraft": False,
+            })
+
+        with self.assertRaisesRegex(RuntimeError, "PR #49 is not open"):
+            adopt.inspect_pr(run)
+
+    def test_adoption_rejects_draft_pr(self) -> None:
+        def run(_command: list[str]) -> str:
+            return json.dumps({
+                "headRefOid": "c" * 40,
+                "headRefName": "partiful/issue-34-initial-implement",
+                "state": "OPEN",
+                "isDraft": True,
+            })
+
+        with self.assertRaisesRegex(RuntimeError, "PR #49 is still draft"):
+            adopt.inspect_pr(run)
+
     def test_adoption_uses_exact_pr_sha_one_review_card_and_idempotent_rerun(self) -> None:
         commands: list[list[str]] = []
         cards: dict[str, str] = {}
@@ -100,7 +124,12 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
         def run(command: list[str]) -> str:
             commands.append(command)
             if command[:3] == ["gh", "pr", "view"]:
-                return json.dumps({"headRefOid": pr_sha, "headRefName": "partiful/issue-34-initial-implement"})
+                return json.dumps({
+                    "headRefOid": pr_sha,
+                    "headRefName": "partiful/issue-34-initial-implement",
+                    "state": "OPEN",
+                    "isDraft": False,
+                })
             if "create" in command:
                 key = command[command.index("--idempotency-key") + 1]
                 cards.setdefault(key, "card-34")
@@ -192,10 +221,15 @@ class PumpHardeningTests(unittest.TestCase):
         self.assertEqual([], commands)
 
     def test_kanban_list_payload_accepts_native_json_array(self) -> None:
-        cards = [{"id": "card-34", "status": "review", "idempotency_key": "partiful:implementation:34"}]
+        cards = [{
+            "id": "card-34",
+            "status": "review",
+            "idempotency_key": "partiful:implementation:34",
+            "body": "Allowed files: `internal/app/service.go`.",
+        }]
         run = lambda _command: json.dumps(cards)
         self.assertEqual(
-            [{"issue": 34, "paths": [], "card": "card-34"}],
+            [{"issue": 34, "paths": ["internal/app/service.go"], "card": "card-34"}],
             implementation.discover_live_cards(run),
         )
         self.assertEqual(cards, evidence.discover_live_cards(run))
@@ -243,9 +277,10 @@ class DurableContractHardeningTests(unittest.TestCase):
         self.assertIn("After two revision verdicts, the cartographer adjudicates", text)
         self.assertIn("Implementer, reviewer, and evidence profiles are audited fail-closed", text)
         self.assertIn("python3 scripts/run_frontier_pumps.py --quiet", text)
+        self.assertIn("gh pr ready 49", text)
         self.assertIn("scripts/adopt_issue_34_pr49.py", text)
         self.assertIn("merge reviewed `main` into PR #49 branch", text)
-        self.assertIn("resolves the live PR head and branch", text)
+        self.assertIn("resolves the live PR head, branch, open state, and review readiness", text)
         self.assertNotIn("27119290015d4d29e0e6f128788128c2b06a4e50", text)
 
     def test_write_set_contract_exactly_matches_issues_and_issue_specific_limits(self) -> None:
