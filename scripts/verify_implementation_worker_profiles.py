@@ -10,6 +10,7 @@ from pathlib import Path
 REQUIRED_PROFILES = (
     "partiful-implementer",
     "partiful-code-reviewer",
+    "partiful-evidence",
 )
 ALLOWED_TOOLSETS = frozenset({"terminal", "file", "skills"})
 

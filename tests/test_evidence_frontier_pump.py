@@ -13,8 +13,8 @@ class EvidenceFrontierPumpTests(unittest.TestCase):
             Issue(27, "blocked", "u27", "OPEN", ("wayfinder:task",), (), ((22, "OPEN"),), "repository evidence"),
         ]
         result = select_frontier(issues)
-        self.assertEqual([28], [issue.number for issue in result["selected"]])
-        self.assertEqual("capability_required", result["held"][0]["reason"])
+        self.assertEqual([20, 28], [issue.number for issue in result["selected"]])
+        self.assertEqual([], result["held"])
 
     def test_body_has_bounded_probe_and_no_live_mutation(self) -> None:
         body = build_body(Issue(28, "probe", "url", "OPEN", ("wayfinder:task",), (), (), "repository evidence"))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Queue one evidence card for each credential-free ready Wayfinder task."""
+"""Queue idempotent credential-free evidence cards for ready Wayfinder tasks."""
 from __future__ import annotations
 import argparse,json,subprocess
 from dataclasses import dataclass
@@ -7,34 +7,31 @@ from pathlib import Path
 from typing import Callable,Iterable
 ROOT=Path(__file__).resolve().parents[1]; REPOSITORY="KalebCole/partiful"; BOARD="partiful"; TASK_LABEL="wayfinder:task"
 @dataclass(frozen=True)
-class Issue:
- number:int; title:str; url:str; state:str; labels:tuple[str,...]; assignees:tuple[str,...]; blocked_by:tuple[tuple[int,str],...]; body:str
-def capability_required(body:str)->bool:
- text=body.lower(); return any(term in text for term in ("authenticated","live observation","live account","login")) or ("credential" in text and "credential-free" not in text)
+class Issue: number:int; title:str; url:str; state:str; labels:tuple[str,...]; assignees:tuple[str,...]; blocked_by:tuple[tuple[int,str],...]; body:str
 def select_frontier(issues:Iterable[Issue])->dict:
- selected=[]; held=[]
- for issue in sorted(issues,key=lambda x:x.number):
-  if not (20<=issue.number<=29 and issue.state=="OPEN" and TASK_LABEL in issue.labels and not issue.assignees and not any(s=="OPEN" for _,s in issue.blocked_by)): continue
-  if capability_required(issue.body): held.append({"number":issue.number,"reason":"capability_required"})
-  else: selected.append(issue)
+ selected=[];held=[]
+ for i in sorted(issues,key=lambda x:x.number):
+  if 20<=i.number<=29 and i.state=="OPEN" and TASK_LABEL in i.labels and not i.assignees and not any(s=="OPEN" for _,s in i.blocked_by): selected.append(i)
  return {"selected":selected,"held":held}
-def build_body(issue:Issue)->str:
- return f'''Collect bounded repository evidence for GitHub task #{issue.number}: {issue.url}. Use only `wayfinder-resolver`'s audited terminal/file/skills capabilities and repository evidence. Perform the narrowest bounded probe, redact sensitive values, and report exact evidence links/paths. Use no credentials and make no live mutation. Do not create review or integrate child cards; GitHub owns requirements and blockers, Kanban owns this one execution card.'''
-def _run(cmd:list[str])->str:
- r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True)
- if r.returncode: raise RuntimeError(r.stderr.strip() or r.stdout.strip())
+def build_body(i:Issue)->str:return f'''Evidence mode for GitHub task #{i.number}: {i.url}. Use dedicated `partiful-evidence` profile and terminal/file/skills only. Perform the narrowest bounded probe: bounded credential-free public/repository investigation is allowed; redact values and report sources. A reviewed `unsupported` conclusion is permitted. Use no credentials: never seek, use, recover, import, or create credentials; no live mutation. GitHub blockers naturally hold blocked tasks. Do not create review or integrate child cards.'''
+def _run(c:list[str])->str:
+ r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True,env={"PATH":"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"})
+ if r.returncode:raise RuntimeError(r.stderr.strip() or r.stdout.strip())
  return r.stdout
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
- query='''query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issue(number:8){subIssues(first:100){nodes{number title url body state labels(first:20){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number state}}}}}}}'''
- owner,name=REPOSITORY.split("/",1)
- payload=json.loads(run(["gh","api","graphql","-F",f"owner={owner}","-F",f"name={name}","-f",f"query={query}"]))
- nodes=payload["data"]["repository"]["issue"]["subIssues"]["nodes"]
- return [Issue(x["number"],x["title"],x["url"],x["state"],tuple(i["name"] for i in x["labels"]["nodes"]),tuple(i["login"] for i in x["assignees"]["nodes"]),tuple((i["number"],i["state"]) for i in x["blockedBy"]["nodes"]),x["body"]) for x in nodes]
-def create_card(issue:Issue,run:Callable[[list[str]],str]=_run)->str:
- cmd=["hermes","kanban","--board",BOARD,"create",f"evidence: #{issue.number} {issue.title}","--body",build_body(issue),"--assignee","wayfinder-resolver","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",f"partiful:evidence:{issue.number}","--goal","--goal-max-turns","6","--skill","wayfinder","--json"]
- value=json.loads(run(cmd)); return str(value.get("task_id") or value["id"])
-def main()->int:
- p=argparse.ArgumentParser(description=__doc__);p.add_argument("--dry-run",action="store_true");args=p.parse_args(); wave=select_frontier(fetch_issues())
- if args.dry_run: print(json.dumps({"selected":[x.number for x in wave["selected"]],"held":wave["held"]}));return 0
- print(json.dumps({"created":[create_card(x) for x in wave["selected"]],"held":wave["held"]}));return 0
-if __name__=="__main__": raise SystemExit(main())
+ q='''query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issue(number:8){subIssues(first:100){nodes{number title url body state labels(first:20){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number state}}}}}}}''';o,n=REPOSITORY.split("/");nodes=json.loads(run(["gh","api","graphql","-F",f"owner={o}","-F",f"name={n}","-f",f"query={q}"]))["data"]["repository"]["issue"]["subIssues"]["nodes"]
+ return [Issue(x["number"],x["title"],x["url"],x["state"],tuple(y["name"] for y in x["labels"]["nodes"]),tuple(y["login"] for y in x["assignees"]["nodes"]),tuple((y["number"],y["state"]) for y in x["blockedBy"]["nodes"]),x["body"]) for x in nodes]
+def create_card(i:Issue,run:Callable[[list[str]],str]=_run)->str:
+ v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",f"partiful:evidence:{i.number}","--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
+def main(argv:list[str]|None=None)->int:
+ p=argparse.ArgumentParser();p.add_argument("--dry-run",action="store_true");p.add_argument("--quiet",action="store_true");a=p.parse_args(argv)
+ try:
+  wave=select_frontier(fetch_issues());output={"selected":[x.number for x in wave["selected"]],"held":wave["held"]}
+  if a.dry_run:
+   if not a.quiet:print(json.dumps(output,sort_keys=True))
+   return 0
+  _run(["python3",str(ROOT/"scripts/verify_implementation_worker_profiles.py")]); created=[create_card(x) for x in wave["selected"]]
+  if not a.quiet:print(json.dumps({"created":created,"held":wave["held"]},sort_keys=True))
+  return 0
+ except (RuntimeError,ValueError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}",file=__import__("sys").stderr);return 1
+if __name__=="__main__":raise SystemExit(main())

@@ -1,16 +1,16 @@
 # Agentic engineering contract
 
-Every implementation card reads this document plus the GitHub issue, which is canonical for allowed files, dependencies, and verification.
+GitHub issue requirements, dependencies, allowed files, verification commands, and blockers are canonical. Use domain vocabulary from `docs/command-model.md` and `docs/architecture.md`; implement only through public seams. Architectural/package boundaries are constraints, not escalation triggers.
 
 ## Modes
 
-- **Feature:** begin with a public-seam test that fails (RED), implement the smallest behavior (GREEN), then refactor only while green.
-- **Bug:** reproduce the reported behavior through its public seam before changing production code; retain the regression test.
-- **Refactor:** prove unchanged behavior first; do not mix new behavior into a refactor.
-- **Evidence:** collect a bounded, redacted observation without changing live state. Behavioral blockers require behavioral evidence; structural blockers may be resolved by static repository evidence without a runtime probe.
+- **Feature:** start with a public-seam behavioral test that fails (RED), implement the smallest behavior (GREEN), then refactor only while green.
+- **Bug:** reproduce the reported behavior at its public seam before production code and retain the regression test.
+- **Refactor:** establish unchanged behavior first and do not mix new behavior.
+- **Evidence:** conduct bounded, credential-free public/repository investigation, redact observations, and allow a reviewed `unsupported` conclusion. No live mutation.
 
-## Implementation and review
+## Handoff and native review
 
-Work only in the exact GitHub `Allowed files:` write set. Record RED and GREEN commands and outcomes, focused and full verification, changed paths, exact PR head SHA, and handoff URL. Never seek, use, recover, or create credentials and never mutate a live Partiful account.
+Record RED and GREEN commands/outcomes, focused and full verification, paths, exact PR head SHA, and handoff URL; read the PR and handoff back. Native-request `partiful-code-reviewer` on the same card. The reviewer exact-SHA checks out the PR and writes `## Implementation review` with `Verdict: APPROVE|REQUEST_CHANGES`, `Commit: <40-sha>`, `RED:`, `GREEN:`, and all category lines `Category-<name>: PASS|FAIL` for: specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, evidence_rigor. Request changes returns the same card with evidence; three reviews hard-block. Approval calls the deterministic gate.
 
-Review the exact head SHA in these sections: specification, domain model, test quality, correctness, edge cases, security/privacy, and maintainability. Post at most three substantive findings. The structured verdict is `APPROVE` or `REQUEST_CHANGES`; approval names the exact SHA. `REQUEST_CHANGES` returns the same card to the implementer. An approved SHA passes the deterministic merge gate only after all mechanical predicates succeed.
+Escalate only contradictory requirements, safety choices, or genuinely unresolved behavior. Never escalate an architectural boundary. Never seek, use, recover, or create credentials or mutate a live Partiful account.

@@ -1,13 +1,13 @@
 {
-  "34": ["internal/app/service.go", "internal/app/invocation.go", "internal/app/gates.go", "internal/app/gates_test.go", "internal/app/errors.go", "internal/app/project.go", "internal/app/collection.go", "internal/app/collection_test.go", "internal/app/cursor.go", "internal/app/cursor_test.go"],
-  "35": ["internal/app/auth_ops.go", "internal/app/auth_ops_test.go", "internal/app/utility_ops.go", "internal/app/utility_ops_test.go", "internal/app/poster_ops.go", "internal/app/poster_ops_test.go"],
-  "36": ["internal/app/event_ops.go", "internal/app/event_ops_test.go"],
-  "37": ["internal/app/people_ops.go", "internal/app/people_ops_test.go"],
-  "38": ["internal/app/blast_ops.go", "internal/app/blast_ops_test.go"],
-  "39": ["internal/cli/**"],
-  "40": ["internal/mcp/**"],
-  "41": ["internal/compose/**", "cmd/partiful/**", "cmd/partiful-mcp/**", "scripts/smoke_binaries.py"],
-  "42": ["scripts/verify_contract_integrity.py", "scripts/watch_public_contract.py", "scripts/tests/test_verify_contract_integrity.py", "scripts/tests/test_watch_public_contract.py", "testdata/contract/**", ".github/workflows/contract-integrity.yml"],
-  "43": ["scripts/partiful_verify/**", "scripts/tests/test_partiful_verify.py"],
-  "44": [".github/workflows/release.yml", "scripts/build_release.py", "scripts/verify_release.py", "scripts/tests/test_release.py", "release/**", "README.md"]
+  "34": {"paths": ["internal/app/service.go", "internal/app/invocation.go", "internal/app/gates.go", "internal/app/gates_test.go", "internal/app/errors.go", "internal/app/project.go", "internal/app/collection.go", "internal/app/collection_test.go", "internal/app/cursor.go", "internal/app/cursor_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "35": {"paths": ["internal/app/auth_ops.go", "internal/app/auth_ops_test.go", "internal/app/utility_ops.go", "internal/app/utility_ops_test.go", "internal/app/poster_ops.go", "internal/app/poster_ops_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "36": {"paths": ["internal/app/event_ops.go", "internal/app/event_ops_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "37": {"paths": ["internal/app/people_ops.go", "internal/app/people_ops_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "38": {"paths": ["internal/app/blast_ops.go", "internal/app/blast_ops_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "39": {"paths": ["internal/cli/**"], "required_checks": [], "verification": ["go test ./..."]},
+  "40": {"paths": ["internal/mcp/**"], "required_checks": [], "verification": ["go test ./..."]},
+  "41": {"paths": ["internal/compose/**", "cmd/partiful/**", "cmd/partiful-mcp/**", "scripts/smoke_binaries.py"], "excluded_paths": ["internal/compose/import_graph_test.go"], "required_checks": [], "verification": ["go test ./..."]},
+  "42": {"paths": ["scripts/verify_contract_integrity.py", "scripts/watch_public_contract.py", "scripts/tests/test_verify_contract_integrity.py", "scripts/tests/test_watch_public_contract.py", "testdata/contract/**", ".github/workflows/contract-integrity.yml"], "required_checks": [], "verification": ["go test ./..."]},
+  "43": {"paths": ["scripts/partiful_verify/**", "scripts/tests/test_partiful_verify.py"], "required_checks": [], "verification": ["go test ./..."]},
+  "44": {"paths": [".github/workflows/release.yml", "scripts/build_release.py", "scripts/verify_release.py", "scripts/tests/test_release.py", "release/**"], "supplemental_scope": "README.md only installation and release verification sections; path-only gate fails closed for README.md", "required_checks": [], "verification": ["go test ./..."]}
 }
