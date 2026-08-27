@@ -21,11 +21,19 @@ The CLI and MCP server are two adapters over one application layer. They share:
 - validation and normalization;
 - transport adapters;
 - credential storage and token refresh;
-- privacy filtering;
+- application-visible field projection;
 - error classification;
 - mutation and dry-run behavior.
 
 Every non-interactive public CLI operation maps one-to-one to a typed MCP tool. Interactive authentication is the exception: `auth login` is CLI-only, while MCP returns an actionable authentication-required error.
+
+## Application parity and authorization
+
+The public product mirrors the data and access that the current Partiful application exposes to the authenticated principal for the corresponding workflow. It does not add a separate host-only, cohost-only, or privacy-filtering policy. In particular, guest operations return every guest field exposed by the application to that principal.
+
+Partiful's backend authorization result is authoritative. A denied operation returns a classified permission error and no partial result.
+
+Application parity is not raw transport passthrough. Firebase metadata, transport identifiers, wrapper fields, and other response members that the Partiful application does not expose remain private adapter details.
 
 ## Output contract
 
