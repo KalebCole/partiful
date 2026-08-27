@@ -37,12 +37,15 @@ def inspect_pr(run: Run) -> tuple[str, str]:
 def adopt(run: Run | None = None, pr: tuple[str, str] | None = None) -> str:
     run = run or _run
     sha, branch = pr or inspect_pr(run)
+    contract = json.loads((ROOT / "config" / "implementation-write-sets.json").read_text())
+    allowed_paths = tuple(contract["34"]["paths"])
     body = (
         f"Adopt existing PR #49 directly in review phase. PR branch: {branch}. "
         f"Exact SHA: {sha}. Do not rerun implementation or create children. "
         "Review using docs/agentic-engineering.md and native same-card lifecycle. "
         "If review requests changes, check out and push this existing PR branch from "
         "the same card workspace; do not open a replacement PR."
+        "\n\nAllowed files: " + ", ".join(f"`{path}`" for path in allowed_paths) + "."
     )
     command = [
         "hermes", "kanban", "--board", "partiful", "create",

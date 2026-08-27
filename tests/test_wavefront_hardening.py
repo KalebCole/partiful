@@ -132,6 +132,20 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
             )
             self.assertIn("PR #49", command[command.index("--body") + 1])
             self.assertIn("partiful/issue-34-initial-implement", command[command.index("--body") + 1])
+            body = command[command.index("--body") + 1]
+            contract = json.loads((ROOT / "config/implementation-write-sets.json").read_text())
+            paths = implementation.parse_allowed_files(body)
+            self.assertEqual(tuple(contract["34"]["paths"]), paths)
+            candidate = implementation.Issue(
+                99, "overlap", "https://example/99", "OPEN",
+                (implementation.IMPLEMENTATION_LABEL,), (), (),
+                ("internal/app/service.go",),
+            )
+            wave = implementation.select_wave_for_issues(
+                [candidate], [{"issue": 34, "paths": list(paths), "card": "card-34"}]
+            )
+            self.assertEqual([], wave["selected"])
+            self.assertEqual(99, wave["held"][0]["number"])
         self.assertEqual(
             ["hermes", "kanban", "--board", "partiful", "show", "card-34", "--json"],
             show_commands[0],
