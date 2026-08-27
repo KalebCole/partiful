@@ -64,6 +64,24 @@ class BodyContractTests(unittest.TestCase):
         self.assertIn("read after write", body.lower())
         self.assertIn("Do not modify repository files", body)
 
+    def test_final_partition_cartographer_materializes_implementation_issues(self) -> None:
+        partition = Issue(
+            19,
+            "Partition implementation into reviewable agent slices",
+            "https://example/19",
+            "OPEN",
+            ("wayfinder:decision",),
+            (),
+            (),
+        )
+
+        body = build_reconcile_body(partition)
+
+        self.assertIn("partiful:implementation", body)
+        self.assertIn("child issue", body)
+        self.assertIn("native blocker", body)
+        self.assertIn("verify every created issue", body)
+
 
 class CardCreationTests(unittest.TestCase):
     def test_creates_reviewer_and_reconcile_cards_with_dependencies(self) -> None:

@@ -111,6 +111,17 @@ Role: read-only independent critic. Start from the ticket and its latest `## Can
 
 
 def build_reconcile_body(issue: Issue) -> str:
+    partition_materialization = ""
+    if issue.number == 19:
+        partition_materialization = """
+
+For approved ticket #19 only, materialize the reviewed partition before closing it:
+
+1. Create one GitHub child issue of map #8 for every reviewed implementation slice. Preserve each reviewed title and complete scope; apply the `partiful:implementation` label; leave each issue unassigned.
+2. Add every reviewed prerequisite as a GitHub native blocker. Never replace native relationships with prose ordering.
+3. Read map #8 and verify every created issue is attached exactly once, has the label and full body, and has the reviewed native blocker set.
+4. Only after that read-back succeeds, post the #19 resolution, close #19, and allow the implementation frontier pump to import the new issues into the Partiful board.
+"""
     return f"""Reconcile the autonomous decision cycle for GitHub ticket #{issue.number}: {issue.url}
 
 Role: Wayfinder cartographer. Read `docs/wayfinder-autonomy.md`, the latest candidate, and the latest independent review. Do not modify repository files.
@@ -120,7 +131,7 @@ Before any write, re-read the issue state, current assignees, recent comments, m
 - `APPROVE`: post a compact final `## Resolution` that links the candidate and review; close the ticket as completed; add or update its one-line decision gist on map #8; apply only the reviewed map-impact changes.
 - `REVISE`: do not finalize. Use `scripts/wayfinder_frontier_pump.py --issue {issue.number} --attempt <review-comment-id>` to create a fresh resolver -> reviewer -> reconciler chain, then complete this card with the new card IDs.
 - `EVIDENCE_REQUIRED`: create the smallest `wayfinder:task` evidence ticket, attach it to map #8, add it as a native blocker of #{issue.number}, unassign #{issue.number}, and complete this card with the new issue URL.
-- `OWNER_GATE`: relabel #{issue.number} from `wayfinder:decision` to `wayfinder:grilling`, unassign it, and block this card with one concrete scenario-based question for the owner.
+- `OWNER_GATE`: relabel #{issue.number} from `wayfinder:decision` to `wayfinder:grilling`, unassign it, and block this card with one concrete scenario-based question for the owner.{partition_materialization}
 
 After every GitHub write, read after write and verify the exact target. Before closing an approved ticket, confirm that the latest independent-review verdict is `APPROVE` and that it reviews the latest candidate."""
 
