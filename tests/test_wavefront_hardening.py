@@ -230,6 +230,9 @@ class DurableContractHardeningTests(unittest.TestCase):
         self.assertIn("Implementer, reviewer, and evidence profiles are audited fail-closed", text)
         self.assertIn("python3 scripts/run_frontier_pumps.py --quiet", text)
         self.assertIn("scripts/adopt_issue_34_pr49.py", text)
+        self.assertIn("merge reviewed `main` into PR #49 branch", text)
+        self.assertIn("resolves the live PR head and branch", text)
+        self.assertNotIn("27119290015d4d29e0e6f128788128c2b06a4e50", text)
 
     def test_write_set_contract_exactly_matches_issues_and_issue_specific_limits(self) -> None:
         contract = json.loads((ROOT / "config/implementation-write-sets.json").read_text())

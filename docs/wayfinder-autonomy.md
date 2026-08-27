@@ -195,4 +195,6 @@ Open, unassigned, unblocked #20-#26 and #28 `wayfinder:task` issues are schedula
 
 ## Operator and scheduler procedures
 
-Use `python3 scripts/run_frontier_pumps.py --quiet` for deterministic quiet composition of the decision, implementation, and evidence pumps. Child errors surface nonzero. The scheduler never merges: merge is triggered only by same-card reviewer approval. Use `scripts/adopt_issue_34_pr49.py` only at cutover to idempotently create/adopt stable card `partiful:implementation:34` directly in review from PR #49 head `27119290015d4d29e0e6f128788128c2b06a4e50`, without rerunning implementation or spawning children.
+Use `python3 scripts/run_frontier_pumps.py --quiet` for deterministic quiet composition of the decision, implementation, and evidence pumps. Child errors surface nonzero. The scheduler never merges: merge is triggered only by same-card reviewer approval.
+
+At the one-time #34 cutover, first fast-forward and push the reviewed migration to `main`. In the preserved PR #49 worktree, merge reviewed `main` into PR #49 branch `partiful/issue-34-initial-implement`, run the required tests, push that branch, and remove the archived worktree so the branch can be attached to the new card. Then run `scripts/adopt_issue_34_pr49.py --apply`. The helper resolves the live PR head and branch, fails closed on branch drift, and idempotently creates/adopts stable card `partiful:implementation:34` directly in review without rerunning implementation or spawning children. Re-running it while the card is already in review is a no-op.
