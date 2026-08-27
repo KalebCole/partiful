@@ -20,16 +20,17 @@ WORKSPACE = f"worktree:{ROOT}"
 IMPLEMENTATION_LABEL = "partiful:implementation"
 
 GRAPHQL = """
-query($owner: String!, $name: String!, $number: Int!) {
+query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) {
     issue(number: $number) {
-      subIssues(first: 100) {
+      subIssues(first: 100, after: $after) {
         nodes {
           number title state url
           labels(first: 20) { nodes { name } }
           assignees(first: 10) { nodes { login } }
           blockedBy(first: 20) { nodes { number state } }
         }
+        pageInfo { hasNextPage endCursor }
       }
     }
   }
@@ -153,8 +154,10 @@ def _run(command: list[str]) -> str:
 
 def fetch_issues(run: Callable[[list[str]], str] = _run) -> list[Issue]:
     owner, name = REPOSITORY.split("/", 1)
-    output = run(
-        [
+    issues: list[Issue] = []
+    after: str | None = None
+    while True:
+        command = [
             "/opt/homebrew/bin/gh",
             "api",
             "graphql",
@@ -167,8 +170,16 @@ def fetch_issues(run: Callable[[list[str]], str] = _run) -> list[Issue]:
             "-f",
             f"query={GRAPHQL}",
         ]
-    )
-    return parse_issues(json.loads(output))
+        if after is not None:
+            command.extend(["-F", f"after={after}"])
+        payload = json.loads(run(command))
+        issues.extend(parse_issues(payload))
+        page_info = payload["data"]["repository"]["issue"]["subIssues"]["pageInfo"]
+        if not page_info["hasNextPage"]:
+            return issues
+        after = page_info["endCursor"]
+        if not after:
+            raise RuntimeError("GitHub reported another sub-issue page without an end cursor")
 
 
 def _task_id(output: str) -> str:

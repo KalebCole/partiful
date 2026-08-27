@@ -10,6 +10,7 @@ from scripts.implementation_frontier_pump import (
     build_integrate_body,
     build_review_body,
     create_cards,
+    fetch_issues,
     select_frontier,
 )
 
@@ -67,6 +68,50 @@ class ImplementationBodyContractTests(unittest.TestCase):
         self.assertIn("required checks", body)
         self.assertIn("read after write", body.lower())
         self.assertIn("implementation_frontier_pump.py --issue 20", body)
+
+
+class FetchImplementationIssuesTests(unittest.TestCase):
+    def test_fetches_every_subissue_page(self) -> None:
+        calls: list[list[str]] = []
+
+        def node(number: int) -> dict:
+            return {
+                "number": number,
+                "title": f"issue {number}",
+                "state": "OPEN",
+                "url": f"https://example/{number}",
+                "labels": {"nodes": [{"name": IMPLEMENTATION_LABEL}]},
+                "assignees": {"nodes": []},
+                "blockedBy": {"nodes": []},
+            }
+
+        def fake_run(command: list[str]) -> str:
+            calls.append(command)
+            second_page = any(value == "after=cursor-100" for value in command)
+            nodes = [node(101)] if second_page else [node(i) for i in range(1, 101)]
+            return json.dumps(
+                {
+                    "data": {
+                        "repository": {
+                            "issue": {
+                                "subIssues": {
+                                    "nodes": nodes,
+                                    "pageInfo": {
+                                        "hasNextPage": not second_page,
+                                        "endCursor": None if second_page else "cursor-100",
+                                    },
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+
+        issues = fetch_issues(run=fake_run)
+
+        self.assertEqual(101, len(issues))
+        self.assertEqual(2, len(calls))
+        self.assertIn("after=cursor-100", calls[1])
 
 
 class ImplementationCardCreationTests(unittest.TestCase):

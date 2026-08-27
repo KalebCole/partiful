@@ -9,6 +9,7 @@ from scripts.wayfinder_frontier_pump import (
     build_resolver_body,
     build_reviewer_body,
     create_cards,
+    fetch_issues,
     select_frontier,
 )
 
@@ -55,6 +56,7 @@ class BodyContractTests(unittest.TestCase):
         self.assertIn("APPROVE", body)
         self.assertIn("REVISE", body)
         self.assertIn("Do not modify the candidate", body)
+        self.assertIn("database ID", body)
 
     def test_reconcile_body_requires_approved_review_and_read_after_write(self) -> None:
         body = build_reconcile_body(self.issue)
@@ -63,6 +65,8 @@ class BodyContractTests(unittest.TestCase):
         self.assertIn("APPROVE", body)
         self.assertIn("read after write", body.lower())
         self.assertIn("Do not modify repository files", body)
+        self.assertIn("two or more", body)
+        self.assertIn("adjudicat", body.lower())
 
     def test_final_partition_cartographer_materializes_implementation_issues(self) -> None:
         partition = Issue(
@@ -81,6 +85,49 @@ class BodyContractTests(unittest.TestCase):
         self.assertIn("child issue", body)
         self.assertIn("native blocker", body)
         self.assertIn("verify every created issue", body)
+        self.assertIn("approved or two-`REVISE`-adjudicated", body)
+
+
+class FetchIssuesTests(unittest.TestCase):
+    def test_fetches_every_subissue_page(self) -> None:
+        calls: list[list[str]] = []
+
+        def node(number: int) -> dict:
+            return {
+                "number": number,
+                "title": f"issue {number}",
+                "state": "OPEN",
+                "url": f"https://example/{number}",
+                "labels": {"nodes": [{"name": "wayfinder:decision"}]},
+                "assignees": {"nodes": []},
+                "blockedBy": {"nodes": []},
+            }
+
+        def fake_run(command: list[str]) -> str:
+            calls.append(command)
+            second_page = any(value == "after=cursor-100" for value in command)
+            nodes = [node(101)] if second_page else [node(i) for i in range(1, 101)]
+            page_info = {
+                "hasNextPage": not second_page,
+                "endCursor": None if second_page else "cursor-100",
+            }
+            return json.dumps(
+                {
+                    "data": {
+                        "repository": {
+                            "issue": {
+                                "subIssues": {"nodes": nodes, "pageInfo": page_info}
+                            }
+                        }
+                    }
+                }
+            )
+
+        issues = fetch_issues(run=fake_run)
+
+        self.assertEqual(101, len(issues))
+        self.assertEqual(2, len(calls))
+        self.assertIn("after=cursor-100", calls[1])
 
 
 class CardCreationTests(unittest.TestCase):

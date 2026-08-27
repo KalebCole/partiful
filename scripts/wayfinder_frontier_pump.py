@@ -19,16 +19,17 @@ WORKSPACE = f"dir:{ROOT}"
 DECISION_LABEL = "wayfinder:decision"
 
 GRAPHQL = """
-query($owner: String!, $name: String!, $number: Int!) {
+query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) {
     issue(number: $number) {
-      subIssues(first: 100) {
+      subIssues(first: 100, after: $after) {
         nodes {
           number title state url
           labels(first: 20) { nodes { name } }
           assignees(first: 10) { nodes { login } }
           blockedBy(first: 20) { nodes { number state } }
         }
+        pageInfo { hasNextPage endCursor }
       }
     }
   }
@@ -105,7 +106,7 @@ Role: read-only independent critic. Start from the ticket and its latest `## Can
 3. Do not modify repository files. Do not modify the candidate. Do not close the issue or edit map issue #8.
 4. Post exactly one `## Independent review` comment with one verdict: `APPROVE`, `REVISE`, `EVIDENCE_REQUIRED`, or `OWNER_GATE`.
 5. Give at most three substantive findings. For each finding state issue, impact, correction, and verification evidence. Ignore style and cosmetic issues.
-6. Read the review comment back. Complete this card with the verdict and review comment URL in metadata.
+6. Read the review comment back. Complete this card with the verdict, review comment URL, and review comment database ID in metadata.
 
 `APPROVE` means the candidate is internally coherent, evidence-backed, and safe for later tickets to rely on. Do not approve a plausible answer that claims unobserved transport behavior."""
 
@@ -115,7 +116,7 @@ def build_reconcile_body(issue: Issue) -> str:
     if issue.number == 19:
         partition_materialization = """
 
-For approved ticket #19 only, materialize the reviewed partition before closing it:
+For approved or two-`REVISE`-adjudicated ticket #19 only, materialize the reviewed partition before closing it:
 
 1. Create one GitHub child issue of map #8 for every reviewed implementation slice. Preserve each reviewed title and complete scope; apply the `partiful:implementation` label; leave each issue unassigned.
 2. Add every reviewed prerequisite as a GitHub native blocker. Never replace native relationships with prose ordering.
@@ -129,11 +130,11 @@ Role: Wayfinder cartographer. Read `docs/wayfinder-autonomy.md`, the latest cand
 Before any write, re-read the issue state, current assignees, recent comments, map issue #8, and native blockers.
 
 - `APPROVE`: post a compact final `## Resolution` that links the candidate and review; close the ticket as completed; add or update its one-line decision gist on map #8; apply only the reviewed map-impact changes.
-- `REVISE`: do not finalize. Use `scripts/wayfinder_frontier_pump.py --issue {issue.number} --attempt <review-comment-id>` to create a fresh resolver -> reviewer -> reconciler chain, then complete this card with the new card IDs.
+- `REVISE`: count prior `## Independent review` comments whose verdict is `REVISE`. If fewer than two exist, do not finalize: use `scripts/wayfinder_frontier_pump.py --issue {issue.number} --attempt <review-comment-database-id>` to create a fresh resolver -> reviewer -> reconciler chain, then complete this card with the new card IDs. If two or more exist, do not create another chain. Adjudicate in this fresh cartographer context: compare the candidates and reviews against authoritative sources and the precedence rules in `docs/wayfinder-autonomy.md`. Create the smallest evidence ticket if proof is missing; otherwise post an `## Adjudicated resolution` that links both review cycles, close the ticket, and update map #8. Do not convert ordinary reviewer disagreement into an owner question.
 - `EVIDENCE_REQUIRED`: create the smallest `wayfinder:task` evidence ticket, attach it to map #8, add it as a native blocker of #{issue.number}, unassign #{issue.number}, and complete this card with the new issue URL.
 - `OWNER_GATE`: relabel #{issue.number} from `wayfinder:decision` to `wayfinder:grilling`, unassign it, and block this card with one concrete scenario-based question for the owner.{partition_materialization}
 
-After every GitHub write, read after write and verify the exact target. Before closing an approved ticket, confirm that the latest independent-review verdict is `APPROVE` and that it reviews the latest candidate."""
+After every GitHub write, read after write and verify the exact target. Before closing normally, confirm that the latest independent-review verdict is `APPROVE` and that it reviews the latest candidate. The only exception is the explicit two-`REVISE` adjudication path above."""
 
 
 def _run(command: list[str]) -> str:
@@ -146,8 +147,10 @@ def _run(command: list[str]) -> str:
 
 def fetch_issues(run: Callable[[list[str]], str] = _run) -> list[Issue]:
     owner, name = REPOSITORY.split("/", 1)
-    output = run(
-        [
+    issues: list[Issue] = []
+    after: str | None = None
+    while True:
+        command = [
             "/opt/homebrew/bin/gh",
             "api",
             "graphql",
@@ -160,8 +163,16 @@ def fetch_issues(run: Callable[[list[str]], str] = _run) -> list[Issue]:
             "-f",
             f"query={GRAPHQL}",
         ]
-    )
-    return parse_issues(json.loads(output))
+        if after is not None:
+            command.extend(["-F", f"after={after}"])
+        payload = json.loads(run(command))
+        issues.extend(parse_issues(payload))
+        page_info = payload["data"]["repository"]["issue"]["subIssues"]["pageInfo"]
+        if not page_info["hasNextPage"]:
+            return issues
+        after = page_info["endCursor"]
+        if not after:
+            raise RuntimeError("GitHub reported another sub-issue page without an end cursor")
 
 
 def _task_id(output: str) -> str:
