@@ -145,6 +145,10 @@ func TestApplicableEvidenceGateManifest(t *testing.T) {
 			_, err := firestoreClient.GetGuest(ctx, transport.GetGuestDocumentRequest{Credential: credential, EventID: "event", GuestID: "guest"})
 			return err
 		})},
+		{"OP11-ENDPOINT-ERRORS:firestoreListDocuments", noDispatch(func() error {
+			_, err := firestoreClient.ListEventGuests(ctx, transport.ListEventDocumentsRequest{Credential: credential, EventID: "event"})
+			return err
+		})},
 		{"OP11-ENDPOINT-ERRORS:getPosterCatalog", endpoint("getPosterCatalog", func() error { _, err := posterClient.GetCatalog(ctx, transport.GetPosterCatalogRequest{}); return err })},
 		{"OP11-EVENT-LIST-REQUEST", noDispatch(
 			func() error {
@@ -199,7 +203,35 @@ func TestApplicableEvidenceGateManifest(t *testing.T) {
 			t.Fatalf("duplicate gate identity %s", sorted[index])
 		}
 	}
-	if len(manifest) != 25 {
-		t.Fatalf("gate entries = %d, want 25", len(manifest))
+	expected := []string{
+		"OP11-BLAST-FIRESTORE-READS",
+		"OP11-ENDPOINT-ERRORS:addGuest",
+		"OP11-ENDPOINT-ERRORS:addInvitedGuestsAsHost",
+		"OP11-ENDPOINT-ERRORS:cancelEvent",
+		"OP11-ENDPOINT-ERRORS:createCohostRequest",
+		"OP11-ENDPOINT-ERRORS:createEvent",
+		"OP11-ENDPOINT-ERRORS:createTextBlast",
+		"OP11-ENDPOINT-ERRORS:deleteCohostRequest",
+		"OP11-ENDPOINT-ERRORS:firestoreGetEvent",
+		"OP11-ENDPOINT-ERRORS:firestoreGetGuest",
+		"OP11-ENDPOINT-ERRORS:firestoreListDocuments",
+		"OP11-ENDPOINT-ERRORS:firestorePatchEvent",
+		"OP11-ENDPOINT-ERRORS:generateEventCohostLink",
+		"OP11-ENDPOINT-ERRORS:getContacts",
+		"OP11-ENDPOINT-ERRORS:getCurrentGuest",
+		"OP11-ENDPOINT-ERRORS:getEventInfo",
+		"OP11-ENDPOINT-ERRORS:getGuests",
+		"OP11-ENDPOINT-ERRORS:getMyPastEventsForHomePage",
+		"OP11-ENDPOINT-ERRORS:getMyUpcomingEventsForHomePage",
+		"OP11-ENDPOINT-ERRORS:getPosterCatalog",
+		"OP11-ENDPOINT-ERRORS:markEventInterest",
+		"OP11-ENDPOINT-ERRORS:removeCohost",
+		"OP11-ENDPOINT-ERRORS:revokeEventCohostLink",
+		"OP11-EVENT-LIST-REQUEST",
+		"OP11-GET-EVENT-REQUEST",
+		"OP11-UPLOAD-PHOTO",
+	}
+	if !reflect.DeepEqual(sorted, expected) {
+		t.Fatalf("gate identities = %q, want %q", sorted, expected)
 	}
 }
