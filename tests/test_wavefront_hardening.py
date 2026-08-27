@@ -124,10 +124,11 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
             self.assertEqual("partiful-implementer", command[command.index("--assignee") + 1])
             self.assertEqual("running", command[command.index("--initial-status") + 1])
             self.assertEqual(
-                "partiful/issue-34-initial-implement",
+                "partiful/issue-34",
                 command[command.index("--branch") + 1],
             )
             self.assertIn("PR #49", command[command.index("--body") + 1])
+            self.assertIn("partiful/issue-34-initial-implement", command[command.index("--body") + 1])
         self.assertEqual(
             ["hermes", "kanban", "--board", "partiful", "show", "card-34", "--json"],
             show_commands[0],
