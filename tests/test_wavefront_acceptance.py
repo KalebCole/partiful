@@ -82,7 +82,7 @@ class PumpAcceptanceTests(unittest.TestCase):
 
     def test_same_card_body_contains_both_roles_and_native_lifecycle(self) -> None:
         body = build_implement_body(Issue(35, "x", "u", "OPEN", ("partiful:implementation",), (), (), ("internal/app/a.go",)))
-        for text in ("Implementer phase", "Reviewer phase", "request-review", "partiful-code-reviewer", "exact 40-character SHA", "nine categories", "Category-specification", "REQUEST_CHANGES", "same card", "attempt 3", "evidence-block", "deterministic_merge_gate.py"):
+        for text in ("Implementer phase", "Reviewer phase", "request-review", "partiful-code-reviewer", "exact 40-character SHA", "nine categories", "Category-specification", "REQUEST_CHANGES", "same card", "attempt 3", "evidence-block", "deterministic_merge_gate.py", "--sign-review-file", "signed review"):
             self.assertIn(text, body)
 
     def test_evidence_uses_dedicated_profile_and_all_nonblocked_tasks_are_schedulable(self) -> None:
