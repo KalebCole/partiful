@@ -50,6 +50,8 @@ class ImplementationBodyContractTests(unittest.TestCase):
         self.assertIn("Closes #20", body)
         self.assertIn("Do not merge", body)
         self.assertIn("Implementation handoff", body)
+        self.assertIn("dedicated gated wrapper", body)
+        self.assertIn("do not seek, import, recover, or create", body.lower())
 
     def test_reviewer_is_independent_and_posts_structured_verdict(self) -> None:
         body = build_review_body(self.issue)
@@ -58,7 +60,9 @@ class ImplementationBodyContractTests(unittest.TestCase):
         self.assertIn("rubber-duck", body)
         self.assertIn("APPROVE", body)
         self.assertIn("REQUEST_CHANGES", body)
-        self.assertIn("Do not modify repository files", body)
+        self.assertIn("Do not edit repository file contents", body)
+        self.assertIn("checkout_verified_pr_head.py", body)
+        self.assertIn("git rev-parse HEAD", body)
 
     def test_integrator_merges_only_after_approved_latest_commit(self) -> None:
         body = build_integrate_body(self.issue)
@@ -68,6 +72,8 @@ class ImplementationBodyContractTests(unittest.TestCase):
         self.assertIn("required checks", body)
         self.assertIn("read after write", body.lower())
         self.assertIn("implementation_frontier_pump.py --issue 20", body)
+        self.assertIn("checkout_verified_pr_head.py", body)
+        self.assertIn("git rev-parse HEAD", body)
 
 
 class FetchImplementationIssuesTests(unittest.TestCase):

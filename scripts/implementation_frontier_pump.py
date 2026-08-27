@@ -100,7 +100,7 @@ Role: autonomous Partiful implementer. Work only in the isolated worktree create
 6. Post one `## Implementation handoff` comment on the issue with the PR URL, reviewed commit SHA, changed paths, RED and GREEN test evidence, full verification commands, and any still-open gate.
 7. Read the PR and issue comment back. Complete this card with the PR URL, PR number, commit SHA, and handoff comment URL in metadata.
 
-Do not merge the PR, close the issue, weaken tests, or make live Partiful mutations."""
+Do not merge the PR, close the issue, weaken tests, or make live Partiful mutations. This worker intentionally has no live service credentials or browser/computer-control capability. Do not seek, import, recover, or create Partiful credentials. Until a dedicated gated wrapper exists with an explicit approval artifact, auditable operation ID, cleanup, and read-back proof, any acceptance step that needs a live mutation is `EVIDENCE_REQUIRED` and must stay blocked."""
 
 
 def build_review_body(issue: Issue) -> str:
@@ -109,10 +109,11 @@ def build_review_body(issue: Issue) -> str:
 Role: read-only Partiful code reviewer in a fresh context. Do not use the implementer transcript.
 
 1. Load the `rubber-duck`, `adversarial-code-review`, and `github-code-review` skills. Read the issue, its authoritative decision links, the latest `## Implementation handoff`, and the linked PR.
-2. Confirm the PR head SHA, inspect the complete diff against its base, and check that changed paths stay within issue scope.
-3. Inspect the production code and tests against the issue acceptance criteria, settled decisions, safety boundaries, evidence gates, and cleanup limits. Run the issue's mechanical checks against the PR head in this isolated worktree when possible.
-4. Do not modify repository files, push commits, merge, close the issue, or invent missing product or transport behavior.
-5. Post exactly one issue comment:
+2. Resolve the PR number, then run `python3 scripts/checkout_verified_pr_head.py <PR-number>`. Record the returned SHA as `REVIEWED_SHA`. This fetches the current PR ref and detaches this isolated worktree at the exact GitHub-declared head. Stop with `EVIDENCE_REQUIRED` if it fails.
+3. Inspect the complete diff against the PR base and check that changed paths stay within issue scope. Immediately before every mechanical check, run `git rev-parse HEAD` and require exact equality with `REVIEWED_SHA`; never run or report a check from another commit.
+4. Inspect the production code and tests against the issue acceptance criteria, settled decisions, safety boundaries, evidence gates, and cleanup limits. Run every required mechanical check against `REVIEWED_SHA`.
+5. Do not edit repository file contents, push commits, merge, close the issue, or invent missing product or transport behavior. The detached checkout is allowed; content edits are not.
+6. Post exactly one issue comment:
 
 ## Implementation review
 PR: <PR URL>
@@ -133,7 +134,7 @@ def build_integrate_body(issue: Issue) -> str:
 
 Role: Partiful integrator. Read `docs/wayfinder-autonomy.md`, the latest implementation handoff, the latest independent implementation review, the linked PR, and native blockers.
 
-Before any write, re-read the issue, PR state, PR head SHA, recent comments, required checks, and map issue #8.
+Before any write, re-read the issue, PR state, PR head SHA, recent comments, required checks, and map issue #8. Resolve the PR number and run `python3 scripts/checkout_verified_pr_head.py <PR-number>`. Record the returned SHA as `INTEGRATION_SHA`. Require `INTEGRATION_SHA` to equal the exact commit named by the latest approved review. Immediately before every mechanical check and again before merge, run `git rev-parse HEAD` and require equality with `INTEGRATION_SHA`; also re-read GitHub's current `headRefOid` and require the same equality. Stop without merging on any mismatch.
 
 - `APPROVE`: confirm the review names the latest PR head commit exactly. Confirm every required check is successful and rerun the issue's mechanical verification against that commit when no required CI check covers it. Confirm the diff stays within scope. Merge the PR with squash, verify the PR is merged, verify the issue is closed, and read after write on both targets. If no open child issue remains under map #8, post a compact completion comment and close the map after reading it back.
 - `REQUEST_CHANGES`: do not merge. If fewer than three implementation reviews exist, run `python3 scripts/implementation_frontier_pump.py --issue {issue.number} --attempt <review-comment-id>` to create a fresh implement -> review -> integrate chain, then complete this card with the new card IDs. On the third failed review, block this card with the exact unresolved defects rather than looping forever.
@@ -339,6 +340,13 @@ def main() -> int:
                 print(json.dumps([issue.__dict__ for issue in frontier], indent=2))
             return 0
 
+        if frontier:
+            _run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "verify_implementation_worker_profiles.py"),
+                ]
+            )
         created = [
             {"issue": issue.number, "cards": create_cards(issue, attempt=args.attempt)}
             for issue in frontier

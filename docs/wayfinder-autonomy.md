@@ -189,7 +189,9 @@ partiful-implementer (isolated worktree, strict TDD, opens PR)
     -> partiful-integrator (merge or bounded revision chain)
 ```
 
-The implementer never merges. The reviewer never edits. The integrator merges only an approved latest commit with successful verification and reads GitHub state back after every write. `REQUEST_CHANGES` creates a fresh implementation chain; the third failed review blocks rather than looping forever. Sandcastle is not used.
+The implementer never merges. The reviewer never edits file contents. Both reviewer and integrator use `scripts/checkout_verified_pr_head.py` to fetch the current PR ref, detach at GitHub's declared head SHA, and prove `HEAD` equality before checks. The integrator merges only an approved latest commit with successful verification and reads GitHub state back after every write. `REQUEST_CHANGES` creates a fresh implementation chain; the third failed review blocks rather than looping forever.
+
+Implementation profiles are fail-closed. Their enabled toolsets are exactly `terminal`, `file`, and `skills`; their profile `.env` files contain no service credentials. `scripts/verify_implementation_worker_profiles.py` audits that state before the pump creates any implementation card. Browser, computer-control, web, messaging, delegation, cron, memory, and unrelated plugin capabilities are unavailable. No live Partiful mutation is permitted until a dedicated gated wrapper exists with an explicit approval artifact, auditable operation ID, cleanup, and read-back proof. Until then, any live-mutation acceptance step becomes `EVIDENCE_REQUIRED`. Sandcastle is not used.
 
 ## Operator commands
 
