@@ -67,21 +67,30 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
     def test_adoption_uses_exact_pr_sha_one_review_card_and_idempotent_rerun(self) -> None:
         commands: list[list[str]] = []
         cards: dict[str, str] = {}
+        state = {"status": "running"}
 
         def run(command: list[str]) -> str:
             commands.append(command)
-            if "create" not in command:
+            if "create" in command:
+                key = command[command.index("--idempotency-key") + 1]
+                cards.setdefault(key, "card-34")
+                return json.dumps({"task_id": cards[key]})
+            if "show" in command:
+                return json.dumps({"id": "card-34", "status": state["status"]})
+            if "request-review" in command:
+                state["status"] = "review"
                 return ""
-            key = command[command.index("--idempotency-key") + 1]
-            cards.setdefault(key, "card-34")
-            return json.dumps({"task_id": cards[key]})
+            raise AssertionError(command)
 
         self.assertEqual("card-34", adopt.adopt(run))
         self.assertEqual("card-34", adopt.adopt(run))
         self.assertEqual({"partiful:implementation:34": "card-34"}, cards)
-        self.assertEqual(4, len(commands))
-        create_commands = commands[::2]
-        review_commands = commands[1::2]
+        create_commands = [command for command in commands if "create" in command]
+        review_commands = [command for command in commands if "request-review" in command]
+        show_commands = [command for command in commands if "show" in command]
+        self.assertEqual(2, len(create_commands))
+        self.assertEqual(2, len(show_commands))
+        self.assertEqual(1, len(review_commands))
         for command in create_commands:
             self.assertIn("partiful:implementation:34", command)
             self.assertIn(adopt.SHA, command[command.index("--body") + 1])
@@ -92,10 +101,14 @@ class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
                 command[command.index("--branch") + 1],
             )
             self.assertIn("PR #49", command[command.index("--body") + 1])
-        for command in review_commands:
-            self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], command[:6])
-            self.assertEqual("partiful-code-reviewer", command[command.index("--reviewer") + 1])
-            self.assertIn(adopt.SHA, command[command.index("--metadata") + 1])
+        self.assertEqual(
+            ["hermes", "kanban", "--board", "partiful", "show", "card-34", "--json"],
+            show_commands[0],
+        )
+        command = review_commands[0]
+        self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], command[:6])
+        self.assertEqual("partiful-code-reviewer", command[command.index("--reviewer") + 1])
+        self.assertIn(adopt.SHA, command[command.index("--metadata") + 1])
 
     def test_native_same_card_transitions_use_review_then_return_commands(self) -> None:
         commands: list[list[str]] = []

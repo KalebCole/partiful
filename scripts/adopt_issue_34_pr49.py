@@ -14,6 +14,10 @@ def adopt(run=None)->str:
  payload=json.loads(run(command)); card=payload.get("task_id") or payload.get("id")
  if not card:raise RuntimeError("Kanban create returned no task id")
  card=str(card)
+ state_value=json.loads(run(["hermes","kanban","--board","partiful","show",card,"--json"]))
+ status=str(state_value.get("task",state_value).get("status",""))
+ if status=="review":return card
+ if status!="running":raise RuntimeError(f"adopted card {card} has unexpected status {status!r}")
  run(["hermes","kanban","--board","partiful","request-review",card,"--reviewer","partiful-code-reviewer","--summary",f"Adopt PR #49 at exact SHA {SHA}","--metadata",json.dumps({"issue":34,"pr":49,"sha":SHA},sort_keys=True)])
  return card
 def main(argv=None)->int:
