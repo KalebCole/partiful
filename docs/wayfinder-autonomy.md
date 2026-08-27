@@ -1,15 +1,16 @@
-# Autonomous Wayfinder decision lanes
+# Autonomous Wayfinder decision and implementation lanes
 
-This repository uses GitHub as the canonical product-decision record and Hermes Kanban as the durable execution queue. A fresh agent context resolves, independently reviews, and reconciles each decision ticket. Sandcastle is optional; it is not part of the decision contract.
+This repository uses GitHub as the canonical product and implementation record and the Partiful Hermes Kanban board as the durable execution queue. Fresh agent contexts resolve, independently review, and reconcile each decision ticket, then implement, independently code-review, and integrate each executable slice. Sandcastle is not part of this workflow.
 
 ## Durable boundaries
 
 | System | Owns | Must not own |
 |---|---|---|
-| GitHub map issue #8 | Destination, decision graph, native blockers, settled decision gists | Worker attempts or runtime state |
+| GitHub map issue #8 | Destination, decision graph, implementation graph, native blockers, settled decision gists | Worker attempts or runtime state |
 | GitHub decision ticket | Question, candidate resolutions, review verdicts, final resolution | Agent process lifecycle |
-| Hermes Kanban | Claims, role-isolated runs, dependencies, retries, crash recovery | Canonical product decisions |
-| Frontier pump | Deterministic frontier discovery and idempotent card creation | Technical reasoning |
+| GitHub implementation issue and PR | Executable scope, acceptance, code diff, verification, review, merged result | Worker process lifecycle |
+| Partiful Hermes Kanban board | Claims, role-isolated decision and implementation runs, dependencies, retries, crash recovery | Canonical decisions or source history |
+| Frontier pumps | Deterministic decision and implementation frontier discovery plus idempotent card creation | Technical reasoning or code authorship |
 | Resolver | One evidence-backed candidate | Approval, closing, or map edits |
 | Reviewer | Independent critique and one structured verdict | Silent rewrites or map edits |
 | Cartographer | Verdict reconciliation and verified GitHub mutations | Unreviewed technical invention |
@@ -166,7 +167,7 @@ Change the issue from `wayfinder:decision` to `wayfinder:grilling`, unassign it,
 
 ## Implementation frontier
 
-The final partition ticket produces GitHub implementation issues, not vendor-specific Sandcastle jobs. Each implementation issue must define:
+The final partition ticket produces GitHub implementation issues for the same Partiful Hermes Kanban board. Each implementation issue must define:
 
 - exact repository scope and allowed files;
 - authoritative decision links;
@@ -180,7 +181,15 @@ The final partition ticket produces GitHub implementation issues, not vendor-spe
 - forbidden changes; and
 - independent-review acceptance.
 
-Those issues can become Hermes `worktree` cards. Sandcastle may be added later as another worker backend without changing the GitHub contracts.
+The implementation frontier pump turns every open, unblocked, unassigned `partiful:implementation` child issue into this dependency chain:
+
+```text
+partiful-implementer (isolated worktree, strict TDD, opens PR)
+  -> partiful-code-reviewer (fresh context, exact-commit verdict)
+    -> partiful-integrator (merge or bounded revision chain)
+```
+
+The implementer never merges. The reviewer never edits. The integrator merges only an approved latest commit with successful verification and reads GitHub state back after every write. `REQUEST_CHANGES` creates a fresh implementation chain; the third failed review blocks rather than looping forever. Sandcastle is not used.
 
 ## Operator commands
 
@@ -188,18 +197,21 @@ Preview the current unclaimed frontier:
 
 ```bash
 python3 scripts/wayfinder_frontier_pump.py --dry-run
+python3 scripts/implementation_frontier_pump.py --dry-run
 ```
 
 Queue the current frontier idempotently:
 
 ```bash
 python3 scripts/wayfinder_frontier_pump.py
+python3 scripts/implementation_frontier_pump.py
 ```
 
 Queue a fresh revision chain for one ticket:
 
 ```bash
 python3 scripts/wayfinder_frontier_pump.py --issue <number> --attempt <review-comment-id>
+python3 scripts/implementation_frontier_pump.py --issue <number> --attempt <review-comment-id>
 ```
 
 The scheduled pump uses `--quiet`: success with no new frontier prints nothing; failures exit nonzero so Hermes cron alerts the owner.
