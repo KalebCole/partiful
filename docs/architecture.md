@@ -9,7 +9,7 @@ This document records accepted product architecture decisions for the Partiful C
 Partiful follows two deliberate precedents:
 
 1. [gogcli](https://gogcli.sh/) for the public command and automation contract.
-2. Printing Press for evidence-led API modeling, typed operations, strict protocol handling, native Go delivery, and mechanical verification.
+2. [Printing Press](https://github.com/mvanhorn/cli-printing-press) for evidence-led API modeling, typed operations, strict protocol handling, native Go delivery, and mechanical verification.
 
 These are precedents, not dependencies. Partiful adopts the relevant design rules without copying gogcli's Google-specific account model or exposing transport operations as public commands.
 
