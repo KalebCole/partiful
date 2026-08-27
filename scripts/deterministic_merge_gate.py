@@ -60,6 +60,6 @@ def main(argv:list[str]|None=None)->int:
   # Re-read every mutable predicate immediately before merge.
   final=validate_gate(_packet(a.issue,a.pr,a.reviewed_sha,_run,contract))
   if not final["ok"]:print(json.dumps(final,sort_keys=True));return 1
-  _run(["gh","pr","merge",str(a.pr),"--squash","--delete-branch"]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
+  _run(["gh","pr","merge",str(a.pr),"--squash"]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
  except (RuntimeError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}");return 1
 if __name__=="__main__":raise SystemExit(main())

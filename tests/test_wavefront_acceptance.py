@@ -55,7 +55,7 @@ class GateAcceptanceTests(unittest.TestCase):
             self.assertEqual(0, gate.main(["--issue", "35", "--pr", "49", "--reviewed-sha", SHA]))
         merge_at = next(i for i, c in enumerate(calls) if c[:3] == ["gh", "pr", "merge"])
         self.assertGreaterEqual(sum(c[:3] == ["gh", "pr", "view"] for c in calls[:merge_at]), 2)
-        self.assertEqual(["gh", "pr", "merge", "49", "--squash", "--delete-branch"], calls[merge_at])
+        self.assertEqual(["gh", "pr", "merge", "49", "--squash"], calls[merge_at])
 
 
 class PumpAcceptanceTests(unittest.TestCase):

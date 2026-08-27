@@ -220,6 +220,17 @@ class PumpHardeningTests(unittest.TestCase):
         self.assertEqual([], evidence.create_missing_cards([issue], [{"idempotency_key": "partiful:evidence:20", "status": "ready"}], lambda command: commands.append(command) or json.dumps({"id": "unused"})))
         self.assertEqual([], commands)
 
+    def test_allowed_files_parser_stops_at_end_of_paragraph(self) -> None:
+        body = (
+            "Allowed files: `internal/app/auth_ops.go`, `internal/app/auth_ops_test.go`.\n\n"
+            "Implement `auth login`, `auth status`, and `schema` over the shared services.\n\n"
+            "Applicable gates: `OP11-AUTH-REQUESTS:sendAuthCodeTrusted`."
+        )
+        self.assertEqual(
+            ("internal/app/auth_ops.go", "internal/app/auth_ops_test.go"),
+            implementation.parse_allowed_files(body),
+        )
+
     def test_kanban_list_payload_accepts_native_json_array(self) -> None:
         cards = [{
             "id": "card-34",

@@ -13,7 +13,7 @@ GRAPHQL='''query($owner:String!,$name:String!,$number:Int!){repository(owner:$ow
 class Issue:
  number:int; title:str; url:str; state:str; labels:tuple[str,...]; assignees:tuple[str,...]; blocked_by:tuple[tuple[int,str],...]; allowed_paths:tuple[str,...]=()
 def parse_allowed_files(body:str)->tuple[str,...]:
- match=re.search(r"(?ims)^Allowed files:\s*(.*?)(?=^\s*(?:##|Applicable |Native |Shared |Forbidden:)|\Z)",body)
+ match=re.search(r"(?ims)^Allowed files:[ \t]*(.*?)(?=^[ \t]*\r?$|^\s*(?:##|Applicable |Native |Shared |Forbidden:)|\Z)",body)
  return tuple(re.findall(r'`([^`]+)`',match.group(1) if match else ""))
 def _allowed(body:str)->tuple[str,...]: return parse_allowed_files(body)
 def parse_issues(payload:dict)->list[Issue]:
