@@ -2,7 +2,7 @@
 
 ## Status
 
-This document records accepted product architecture decisions for the Partiful CLI and MCP server. Transport details remain governed by `spec/partiful.openapi.json` and its evidence ledger.
+This document records accepted product architecture decisions for the Partiful CLI and MCP server. The normative public inventory and interface contract live in [`command-model.md`](command-model.md). Transport details remain governed by [`../spec/partiful.openapi.json`](../spec/partiful.openapi.json) and its evidence ledger.
 
 ## Architectural precedents
 
@@ -81,7 +81,7 @@ Commands use typed positional arguments and named flags as their primary input c
 ```bash
 partiful events create \
   --title "Dinner" \
-  --starts-at "2026-08-30T18:00:00-07:00"
+  --start "2026-08-30T18:00:00-07:00"
 ```
 
 The command schema defines required arguments, flag types, repeatability, allowed values, and conflicts. Structured JSON flags are reserved for fields that are naturally structured. Explicit file or stdin input is reserved for large content and genuine whole-resource round-trip workflows.
