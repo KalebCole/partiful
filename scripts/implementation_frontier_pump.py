@@ -43,7 +43,9 @@ def build_implement_body(issue:Issue)->str:
 Read `docs/agentic-engineering.md` and the GitHub issue (canonical requirements, allowed files, blockers, and commands). Use no credentials and make no live mutations. No child review/revision/integrator cards.
 
 ## Implementer phase
-Feature/Bug/Refactor mode only as declared in the issue. Use strict feature/bug TDD, domain vocabulary and public seams. Record strict RED then GREEN command/output proof, focused/full verification, exact changed paths, PR URL and exact 40-character head SHA. Allowed files: {", ".join(issue.allowed_paths)}. Open/update PR, post and perform PR+handoff readback, then native `request-review` to `partiful-code-reviewer` on this same card with PR URL and SHA.
+Feature/Bug/Refactor mode only as declared in the issue. Use strict feature/bug TDD, domain vocabulary and public seams. Record strict RED then GREEN command/output proof, focused/full verification, exact changed paths, PR URL and exact 40-character head SHA. Open/update PR, post and perform PR+handoff readback, then native `request-review` to `partiful-code-reviewer` on this same card with PR URL and SHA.
+
+Allowed files: {", ".join(f'`{path}`' for path in issue.allowed_paths)}.
 
 ## Reviewer phase
 After native request-review, checkout the exact PR head at the exact 40-character SHA (exact 40-character PR SHA) and prove detached HEAD equality. Run all nine categories: specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, evidence_rigor. Post machine-parseable structured verdict `## Implementation review`, `Verdict: APPROVE|REQUEST_CHANGES`, `Commit: <40-sha>`, `Category-<name>: PASS|FAIL` (for example `Category-specification: PASS`), `RED:`, and `GREEN:`. Count structural review events/structured reviews. On request changes, native-return this same card to `partiful-implementer` with evidence-block; after attempt 3 hard-block (max 3 reviews). On approval invoke `scripts/deterministic_merge_gate.py`. Escalate only contradictory requirements, safety choices, or genuinely unresolved behavior; architectural boundaries do not escalate.'''

@@ -9,6 +9,7 @@ from scripts.implementation_frontier_pump import (
     build_implement_body,
     build_review_body,
     create_card,
+    parse_allowed_files,
     select_frontier,
 )
 
@@ -33,6 +34,7 @@ class SingleCardContractTests(unittest.TestCase):
         body = build_implement_body(self.issue)
         for text in ("docs/agentic-engineering.md", "strict feature/bug TDD", "Allowed files", "internal/app/auth_ops.go", "verification", "no credentials", "no live mutations", "PR+handoff readback", "request-review", "partiful-code-reviewer"):
             self.assertIn(text, body)
+        self.assertEqual(self.issue.allowed_paths, tuple(parse_allowed_files(body)))
 
     def test_review_body_uses_exact_head_and_routes_verdicts(self) -> None:
         body = build_review_body(self.issue)
