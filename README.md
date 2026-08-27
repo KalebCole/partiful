@@ -13,3 +13,9 @@ Printing Press can use `spec/partiful.openapi.json` as its sole generator input.
 Verified observations, public-asset research, protocol references, and explicit
 uncertainty support the contract. This repository does not contain a generated
 CLI or MCP server.
+
+## Architecture
+
+[`docs/architecture.md`](docs/architecture.md) records the accepted public
+interface and application architecture, including the gogcli and Printing Press
+precedents.
