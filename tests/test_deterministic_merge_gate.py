@@ -13,7 +13,7 @@ class DeterministicMergeGateTests(unittest.TestCase):
 
     def test_accepts_exact_approved_clean_packet(self) -> None:
         sha = "a" * 40
-        result = validate_gate({"head": sha, "reviewed_sha": sha, "paths": ["internal/app/auth_ops.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context":"test", "state": "SUCCESS"}], "required_checks": ["test"], "no_required_ci": False, "latest_review": {"verdict": "APPROVE", "sha": sha, "categories": {x:"PASS" for x in ("specification","correctness","domain_model","test_quality","edge_cases","security_privacy","maintainability","domain_adherence","evidence_rigor")}}, "evidence":{"red":"failed","green":"passed"}, "review_cycles": 3})
+        result = validate_gate({"head": sha, "reviewed_sha": sha, "reviewer_provenance": True, "paths": ["internal/app/auth_ops.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context":"test", "state": "SUCCESS"}], "required_checks": ["test"], "no_required_ci": False, "latest_review": {"verdict": "APPROVE", "sha": sha, "categories": {x:"PASS" for x in ("specification","correctness","domain_model","test_quality","edge_cases","security_privacy","maintainability","domain_adherence","evidence_rigor")}}, "evidence":{"red":"failed","green":"passed"}, "review_cycles": 3})
         self.assertEqual({"ok": True, "failures": []}, result)
 
 

@@ -17,7 +17,7 @@ CATEGORIES = ["specification", "correctness", "domain_model", "test_quality", "e
 
 
 def clean_packet() -> dict:
-    return {"head": SHA, "reviewed_sha": SHA, "paths": ["internal/app/a.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context": "test", "state": "SUCCESS"}], "required_checks": ["test"], "no_required_ci": False, "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {x: "PASS" for x in CATEGORIES}}, "review_cycles": 3, "evidence": {"red": "go test ./... (expected fail)", "green": "go test ./..."}}
+    return {"head": SHA, "reviewed_sha": SHA, "reviewer_provenance": True, "paths": ["internal/app/a.go"], "allowed_paths": ["internal/app/**"], "blockers": [], "checks": [{"context": "test", "state": "SUCCESS"}], "required_checks": ["test"], "no_required_ci": False, "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {x: "PASS" for x in CATEGORIES}}, "review_cycles": 3, "evidence": {"red": "go test ./... (expected fail)", "green": "go test ./..."}}
 
 
 class GateAcceptanceTests(unittest.TestCase):
@@ -29,6 +29,7 @@ class GateAcceptanceTests(unittest.TestCase):
             "scope": {"paths": ["README.md"]}, "missing_evidence": {"evidence": {"red": "", "green": ""}},
             "categories": {"latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {"specification": "PASS"}}},
             "cycles": {"review_cycles": 4},
+            "forged_comment": {"reviewer_provenance": False},
         }
         for name, mutation in mutations.items():
             with self.subTest(name=name):
@@ -58,13 +59,14 @@ class GateAcceptanceTests(unittest.TestCase):
             if cmd[:3] == ["gh", "pr", "view"]: return json.dumps(next(pr_views))
             if cmd[:3] == ["gh", "api", "graphql"]: return json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}})
             if "/comments" in " ".join(cmd): return json.dumps([{"body": "## Implementation review\nVerdict: APPROVE\nCommit: " + SHA + "\nRED: fail\nGREEN: pass\n" + "\n".join(f"Category-{x}: PASS" for x in CATEGORIES)}])
+
             if cmd[:3] == ["gh", "issue", "view"]: return json.dumps({"state": "CLOSED"})
             return ""
-        with patch.object(gate, "_run", run), patch.object(gate, "checkout_verified_pr_head", return_value=SHA), patch.object(gate, "load_issue_contract", return_value={"paths": ["internal/app/**"], "required_checks": ["test"], "verification": ["go test ./..."]}):
+        with patch.object(gate, "_run", run), patch.object(gate, "_native_reviewer_provenance", return_value=True), patch.object(gate, "checkout_verified_pr_head", return_value=SHA), patch.object(gate, "load_issue_contract", return_value={"paths": ["internal/app/**"], "required_checks": ["test"], "verification": ["go test ./..."]}):
             self.assertEqual(0, gate.main(["--issue", "35", "--pr", "49", "--reviewed-sha", SHA]))
         merge_at = next(i for i, c in enumerate(calls) if c[:3] == ["gh", "pr", "merge"])
         self.assertGreaterEqual(sum(c[:3] == ["gh", "pr", "view"] for c in calls[:merge_at]), 2)
-        self.assertEqual(["gh", "pr", "merge", "49", "--squash"], calls[merge_at])
+        self.assertEqual(["gh", "pr", "merge", "49", "--squash", "--match-head-commit", SHA], calls[merge_at])
         self.assertEqual(["git", "checkout", "main"], calls[-1])
 
 

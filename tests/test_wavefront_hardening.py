@@ -4,6 +4,8 @@ import contextlib
 import io
 import json
 import os
+import sqlite3
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -46,6 +48,7 @@ class MergeGateHardeningTests(unittest.TestCase):
                 return json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}})
             if "/comments" in " ".join(command):
                 return json.dumps([{"body": review("APPROVE")}])
+
             if command == ["verify-local"]:
                 return ""
             if command == ["git", "branch", "--show-current"]:
@@ -55,21 +58,40 @@ class MergeGateHardeningTests(unittest.TestCase):
             raise AssertionError(command)
 
         contract = {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["verify-local"]}
-        with patch.object(gate, "_run", run), patch.object(gate, "checkout_verified_pr_head", return_value=SHA), patch.object(gate, "load_issue_contract", return_value=contract):
+        with patch.object(gate, "_run", run), patch.object(gate, "_native_reviewer_provenance", return_value=True), patch.object(gate, "checkout_verified_pr_head", return_value=SHA), patch.object(gate, "load_issue_contract", return_value=contract):
             self.assertNotEqual(0, gate.main(["--issue", "34", "--pr", "49", "--reviewed-sha", SHA]))
         self.assertEqual(2, sum(call[:3] == ["gh", "pr", "view"] for call in calls))
         self.assertEqual([], [call for call in calls if call[:3] == ["gh", "pr", "merge"]])
 
     def test_latest_structured_review_request_changes_beats_older_approval(self) -> None:
-        packet = gate._packet(34, 49, SHA, lambda command: json.dumps(pr_view(SHA)) if command[:3] == ["gh", "pr", "view"] else json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}}) if command[:3] == ["gh", "api", "graphql"] else json.dumps([{"body": review("APPROVE")}, {"body": review("REQUEST_CHANGES")}]), {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["go test ./..."]})
+        with patch.object(gate, "_native_reviewer_provenance", return_value=True):
+            packet = gate._packet(34, 49, SHA, lambda command: json.dumps(pr_view(SHA)) if command[:3] == ["gh", "pr", "view"] else json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}}) if command[:3] == ["gh", "api", "graphql"] else json.dumps([{"body": review("APPROVE")}, {"body": review("REQUEST_CHANGES")}]), {"paths": ["internal/app/**"], "required_checks": [], "no_required_ci": True, "verification": ["go test ./..."]})
         self.assertEqual("REQUEST_CHANGES", packet["latest_review"]["verdict"])
         self.assertEqual(set(CATEGORIES), set(packet["latest_review"]["categories"]))
         self.assertFalse(gate.validate_gate(packet)["ok"])
+
+    def test_native_reviewer_provenance_is_bound_to_dispatcher_run(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "kanban.db"
+            conn = sqlite3.connect(db)
+            conn.executescript("""
+                CREATE TABLE tasks (id TEXT PRIMARY KEY, assignee TEXT, status TEXT, current_run_id INTEGER, idempotency_key TEXT, claim_lock TEXT);
+                CREATE TABLE task_runs (id INTEGER PRIMARY KEY, task_id TEXT, profile TEXT, status TEXT, claim_lock TEXT);
+                INSERT INTO tasks VALUES ('card-34','partiful-code-reviewer','running',7,'partiful:implementation:34','lock-7');
+                INSERT INTO task_runs VALUES (7,'card-34','partiful-code-reviewer','running','lock-7');
+            """)
+            conn.close()
+            env = {"HERMES_PROFILE": "partiful-code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
+            with patch.dict(os.environ, env, clear=True):
+                self.assertTrue(gate._native_reviewer_provenance(34))
+                os.environ["HERMES_PROFILE"] = "partiful-implementer"
+                self.assertFalse(gate._native_reviewer_provenance(34))
 
     def test_required_check_names_must_match_successful_contexts(self) -> None:
         packet = {
             "head": SHA,
             "reviewed_sha": SHA,
+            "reviewer_provenance": True,
             "latest_review": {"verdict": "APPROVE", "sha": SHA, "categories": {name: "PASS" for name in CATEGORIES}},
             "evidence": {"red": "failed first", "green": "passed after fix"},
             "paths": ["internal/app/a.go"],

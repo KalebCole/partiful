@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed exact-SHA merge gate for a reviewed Partiful PR."""
 from __future__ import annotations
-import argparse,json,re,shlex,subprocess
+import argparse,fnmatch,json,os,re,shlex,sqlite3,subprocess
 from pathlib import Path
 from typing import Callable
 try: from scripts.select_implementation_wave import _overlap
@@ -14,6 +14,7 @@ def validate_gate(p:dict)->dict:
  def fail(c,d):f.append({"code":c,"detail":d})
  sha=lambda x:isinstance(x,str) and bool(re.fullmatch(r"[0-9a-f]{40}",x))
  if not sha(p.get("head")) or not sha(p.get("reviewed_sha")) or p.get("head")!=p.get("reviewed_sha"):fail("sha_mismatch","nonempty 40-char reviewed SHA must equal head")
+ if p.get("reviewer_provenance") is not True:fail("invalid_reviewer_provenance","approval must come from the live native partiful-code-reviewer run")
  r=p.get("latest_review") or {}
  if r.get("verdict")!="APPROVE" or r.get("sha")!=p.get("head"):fail("latest_review_not_approve","latest structured approval must name head")
  if set((r.get("categories") or {}))!=set(CATEGORIES) or any(v!="PASS" for v in (r.get("categories") or {}).values()):fail("incomplete_review_categories","nine category PASS verdicts required")
@@ -44,6 +45,18 @@ def _run(c:list[str])->str:
 def load_issue_contract(issue:int)->dict:
  raw=json.loads((ROOT/"config/implementation-write-sets.json").read_text())[str(issue)]
  return raw if isinstance(raw,dict) else {"paths":raw,"required_checks":["declared"],"verification":["go test ./..."]}
+def _native_reviewer_provenance(issue:int)->bool:
+ if os.environ.get("HERMES_PROFILE")!="partiful-code-reviewer" or os.environ.get("HERMES_KANBAN_BOARD")!="partiful":return False
+ db,task_id,run_id,claim=(os.environ.get(k,"") for k in ("HERMES_KANBAN_DB","HERMES_KANBAN_TASK","HERMES_KANBAN_RUN_ID","HERMES_KANBAN_CLAIM_LOCK"))
+ if not db or not task_id or not run_id.isdigit() or not claim:return False
+ try:
+  conn=sqlite3.connect(f"file:{Path(db).resolve()}?mode=ro",uri=True)
+  try:
+   task=conn.execute("SELECT assignee,status,current_run_id,idempotency_key,claim_lock FROM tasks WHERE id=?",(task_id,)).fetchone()
+   run=conn.execute("SELECT task_id,profile,status,claim_lock FROM task_runs WHERE id=?",(int(run_id),)).fetchone()
+  finally:conn.close()
+ except (OSError,sqlite3.Error):return False
+ return task==("partiful-code-reviewer","running",int(run_id),f"partiful:implementation:{issue}",claim) and run==(task_id,"partiful-code-reviewer","running",claim)
 def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],contract:dict)->dict:
  view=json.loads(run(["gh","pr","view",str(pr),"--json","headRefOid,files,statusCheckRollup"]));o,n="KalebCole","partiful";q='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){blockedBy(first:100){nodes{state number}}}}}'
  blockers=json.loads(run(["gh","api","graphql","-F",f"owner={o}","-F",f"name={n}","-F",f"number={issue}","-f",f"query={q}"]))["data"]["repository"]["issue"]["blockedBy"]["nodes"]
@@ -51,7 +64,7 @@ def _packet(issue:int,pr:int,reviewed_sha:str,run:Callable[[list[str]],str],cont
  get=lambda pat:(re.search(pat,body,re.M).group(1) if re.search(pat,body,re.M) else None)
  cats={c:get(rf"^Category-{c}:\s*(PASS|FAIL)\s*$") for c in CATEGORIES}
  checks=[{"context":x.get("name") or x.get("context"),"state":x.get("conclusion") or x.get("status")} for x in view.get("statusCheckRollup",[])]
- return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"no_required_ci":contract.get("no_required_ci"),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
+ return {"head":view.get("headRefOid"),"reviewed_sha":reviewed_sha,"reviewer_provenance":_native_reviewer_provenance(issue),"paths":[x["path"] for x in view.get("files",[])],"allowed_paths":contract["paths"],"excluded_paths":contract.get("excluded_paths",[]),"blockers":blockers,"checks":checks,"required_checks":contract.get("required_checks",[]),"no_required_ci":contract.get("no_required_ci"),"local_verification_ran":bool(contract.get("verification")),"latest_review":{"verdict":get(r"^Verdict:\s*(APPROVE|REQUEST_CHANGES)\s*$") or "MISSING","sha":get(r"^Commit:\s*([0-9a-f]{40})\s*$"),"categories":cats},"review_cycles":len(reviews),"evidence":{"red":get(r"^RED:\s*(.+)$"),"green":get(r"^GREEN:\s*(.+)$")}}
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser();p.add_argument("--issue",type=int,required=True);p.add_argument("--pr",type=int,required=True);p.add_argument("--reviewed-sha",required=True);a=p.parse_args(argv)
  try:
@@ -64,7 +77,7 @@ def main(argv:list[str]|None=None)->int:
    # Re-read every mutable predicate immediately before merge.
    final=validate_gate(_packet(a.issue,a.pr,a.reviewed_sha,_run,contract))
    if not final["ok"]:print(json.dumps(final,sort_keys=True));return 1
-   _run(["gh","pr","merge",str(a.pr),"--squash"]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
+   _run(["gh","pr","merge",str(a.pr),"--squash","--match-head-commit",a.reviewed_sha]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
   finally:
    if branch:_run(["git","checkout",branch])
  except (RuntimeError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}");return 1
