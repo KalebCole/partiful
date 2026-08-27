@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Queue idempotent credential-free evidence cards for ready Wayfinder tasks."""
 from __future__ import annotations
-import argparse,json,subprocess
+import argparse,json,subprocess,sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable,Iterable
@@ -21,8 +21,14 @@ def _run(c:list[str])->str:
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
  q='''query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issue(number:8){subIssues(first:100){nodes{number title url body state labels(first:20){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number state}}}}}}}''';o,n=REPOSITORY.split("/");nodes=json.loads(run(["gh","api","graphql","-F",f"owner={o}","-F",f"name={n}","-f",f"query={q}"]))["data"]["repository"]["issue"]["subIssues"]["nodes"]
  return [Issue(x["number"],x["title"],x["url"],x["state"],tuple(y["name"] for y in x["labels"]["nodes"]),tuple(y["login"] for y in x["assignees"]["nodes"]),tuple((y["number"],y["state"]) for y in x["blockedBy"]["nodes"]),x["body"]) for x in nodes]
+def idempotency_key(i:Issue)->str:return f"partiful:evidence:{i.number}"
+def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
+ raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"]));return raw.get("tasks",raw if isinstance(raw,list) else [])
 def create_card(i:Issue,run:Callable[[list[str]],str]=_run)->str:
- v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",f"partiful:evidence:{i.number}","--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
+ v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",idempotency_key(i),"--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
+def create_missing_cards(issues:Iterable[Issue],cards:Iterable[dict],run:Callable[[list[str]],str]=_run)->list[str]:
+ existing={str(card.get("idempotency_key",card.get("idempotencyKey",""))) for card in cards if str(card.get("status",card.get("state",""))).lower() not in {"done","closed","cancelled","completed","archived"}}
+ return [create_card(issue,run) for issue in issues if idempotency_key(issue) not in existing]
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser();p.add_argument("--dry-run",action="store_true");p.add_argument("--quiet",action="store_true");a=p.parse_args(argv)
  try:
@@ -30,8 +36,8 @@ def main(argv:list[str]|None=None)->int:
   if a.dry_run:
    if not a.quiet:print(json.dumps(output,sort_keys=True))
    return 0
-  _run(["python3",str(ROOT/"scripts/verify_implementation_worker_profiles.py")]); created=[create_card(x) for x in wave["selected"]]
+  _run(["python3",str(ROOT/"scripts/verify_implementation_worker_profiles.py")]); created=create_missing_cards(wave["selected"],discover_live_cards())
   if not a.quiet:print(json.dumps({"created":created,"held":wave["held"]},sort_keys=True))
   return 0
- except (RuntimeError,ValueError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}",file=__import__("sys").stderr);return 1
+ except (RuntimeError,ValueError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}",file=sys.stderr);return 1
 if __name__=="__main__":raise SystemExit(main())

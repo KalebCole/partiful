@@ -46,6 +46,12 @@ Feature/Bug/Refactor mode only as declared in the issue. Use strict feature/bug 
 ## Reviewer phase
 After native request-review, checkout the exact PR head at the exact 40-character SHA (exact 40-character PR SHA) and prove detached HEAD equality. Run all nine categories: specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, evidence_rigor. Post machine-parseable structured verdict `## Implementation review`, `Verdict: APPROVE|REQUEST_CHANGES`, `Commit: <40-sha>`, `Category-<name>: PASS|FAIL` (for example `Category-specification: PASS`), `RED:`, and `GREEN:`. Count structural review events/structured reviews. On request changes, native-return this same card to `partiful-implementer` with evidence-block; after attempt 3 hard-block (max 3 reviews). On approval invoke `scripts/deterministic_merge_gate.py`. Escalate only contradictory requirements, safety choices, or genuinely unresolved behavior; architectural boundaries do not escalate.'''
 def build_review_body(issue:Issue)->str: return build_implement_body(issue)
+def request_native_review(card:str,pr_url:str,sha:str,run:Callable[[list[str]],str]=_run)->None:
+ if not re.fullmatch(r"[0-9a-f]{40}",sha):raise ValueError("exact 40-character SHA required")
+ run(["hermes","kanban","--board",BOARD,"request-review",card,"--reviewer","partiful-code-reviewer","--summary",f"PR: {pr_url}; exact SHA: {sha}","--metadata",json.dumps({"pr_url":pr_url,"sha":sha},sort_keys=True)])
+def request_changes_on_same_card(card:str,evidence_block:str,run:Callable[[list[str]],str]=_run)->None:
+ if not evidence_block.strip():raise ValueError("evidence block required")
+ run(["hermes","kanban","--board",BOARD,"request-changes",card,evidence_block])
 def _task_id(raw:str)->str:
  obj=json.loads(raw); value=obj.get("task_id") or obj.get("id")
  if not value: raise RuntimeError("Kanban create returned no task id")
