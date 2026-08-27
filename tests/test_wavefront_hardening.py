@@ -206,6 +206,29 @@ class DurableContractHardeningTests(unittest.TestCase):
         self.assertNotIn("internal/compose/import_graph_test.go", contract["41"]["paths"])
         self.assertEqual(["internal/compose/import_graph_test.go"], contract["41"]["excluded_paths"])
         self.assertEqual("README.md only installation and release verification sections; path-only gate fails closed for README.md", contract["44"]["supplemental_scope"])
+        shared = {
+            "go test ./... -count=1",
+            "python3 scripts/verify_go_package_graph.py",
+            "python3 scripts/verify_command_model.py",
+            "python3 scripts/verify_implementation_worker_profiles.py",
+        }
+        focused = {
+            "34": "go test ./internal/app -count=1",
+            "35": "go test ./internal/app -count=1",
+            "36": "go test ./internal/app -count=1",
+            "37": "go test ./internal/app -count=1",
+            "38": "go test ./internal/app -count=1",
+            "39": "go test ./internal/cli ./cmd/partiful -count=1",
+            "40": "go test ./internal/mcp ./cmd/partiful-mcp -count=1",
+            "41": "python3 scripts/smoke_binaries.py",
+            "42": "python3 -m unittest discover -s scripts/tests -p 'test_*contract*.py' -v",
+            "43": "python3 -m unittest discover -s scripts/tests -p 'test_partiful_verify.py' -v",
+            "44": "python3 -m unittest discover -s scripts/tests -p 'test_release.py' -v",
+        }
+        for issue, issue_contract in contract.items():
+            verification = set(issue_contract["verification"])
+            self.assertTrue(shared <= verification, issue)
+            self.assertIn(focused[issue], verification, issue)
 
 
 if __name__ == "__main__":
