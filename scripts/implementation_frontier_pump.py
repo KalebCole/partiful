@@ -20,14 +20,16 @@ def parse_issues(payload:dict)->list[Issue]:
  nodes=payload["data"]["repository"]["issue"]["subIssues"]["nodes"]
  return [Issue(n["number"],n["title"],n["url"],n["state"],tuple(x["name"] for x in n["labels"]["nodes"]),tuple(x["login"] for x in n["assignees"]["nodes"]),tuple((x["number"],x["state"]) for x in n["blockedBy"]["nodes"]),parse_allowed_files(n.get("body",""))) for n in nodes]
 def _run(cmd:list[str])->str:
- r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin", "HOME": os.environ.get("HOME", str(Path.home()))})
+ env={"HOME": os.environ.get("HOME", str(Path.home()))}
+ env["PATH"] = f'{env["HOME"]}/.hermes/hermes-agent/venv/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+ r=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,env=env)
  if r.returncode: raise RuntimeError(r.stderr.strip() or r.stdout.strip())
  return r.stdout
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
  owner,name=REPOSITORY.split("/"); return parse_issues(json.loads(run(["gh","api","graphql","-F",f"owner={owner}","-F",f"name={name}","-F",f"number={MAP_ISSUE}","-f",f"query={GRAPHQL}"])))
 def select_frontier(issues:Iterable[Issue])->list[Issue]: return sorted([i for i in issues if i.state=="OPEN" and IMPLEMENTATION_LABEL in i.labels and not i.assignees and not any(s=="OPEN" for _,s in i.blocked_by)],key=lambda i:i.number)
 def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
- raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"])); cards=raw.get("tasks",raw if isinstance(raw,list) else [])
+ raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"])); cards=raw if isinstance(raw,list) else raw.get("tasks",[])
  result=[]
  for c in cards:
   key=c.get("idempotency_key",c.get("idempotencyKey","")); status=str(c.get("status",c.get("state",""))).lower()

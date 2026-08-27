@@ -15,7 +15,9 @@ def select_frontier(issues:Iterable[Issue])->dict:
  return {"selected":selected,"held":held}
 def build_body(i:Issue)->str:return f'''Evidence mode for GitHub task #{i.number}: {i.url}. Use dedicated `partiful-evidence` profile and terminal/file/skills only. Perform the narrowest bounded probe: bounded credential-free public/repository investigation is allowed; redact values and report sources. A reviewed `unsupported` conclusion is permitted. Use no credentials: never seek, use, recover, import, or create credentials; no live mutation. GitHub blockers naturally hold blocked tasks. Do not create review or integrate child cards.'''
 def _run(c:list[str])->str:
- r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True,env={"PATH":"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin","HOME":os.environ.get("HOME",str(Path.home()))})
+ env={"HOME":os.environ.get("HOME",str(Path.home()))}
+ env["PATH"]=f'{env["HOME"]}/.hermes/hermes-agent/venv/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+ r=subprocess.run(c,cwd=ROOT,text=True,capture_output=True,env=env)
  if r.returncode:raise RuntimeError(r.stderr.strip() or r.stdout.strip())
  return r.stdout
 def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
@@ -23,7 +25,7 @@ def fetch_issues(run:Callable[[list[str]],str]=_run)->list[Issue]:
  return [Issue(x["number"],x["title"],x["url"],x["state"],tuple(y["name"] for y in x["labels"]["nodes"]),tuple(y["login"] for y in x["assignees"]["nodes"]),tuple((y["number"],y["state"]) for y in x["blockedBy"]["nodes"]),x["body"]) for x in nodes]
 def idempotency_key(i:Issue)->str:return f"partiful:evidence:{i.number}"
 def discover_live_cards(run:Callable[[list[str]],str]=_run)->list[dict]:
- raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"]));return raw.get("tasks",raw if isinstance(raw,list) else [])
+ raw=json.loads(run(["hermes","kanban","--board",BOARD,"list","--json"]));return raw if isinstance(raw,list) else raw.get("tasks",[])
 def create_card(i:Issue,run:Callable[[list[str]],str]=_run)->str:
  v=json.loads(run(["hermes","kanban","--board",BOARD,"create",f"evidence: #{i.number} {i.title}","--body",build_body(i),"--assignee","partiful-evidence","--workspace",f"dir:{ROOT}","--tenant","partiful-wayfinder","--idempotency-key",idempotency_key(i),"--goal","--goal-max-turns","6","--json"]));return str(v.get("task_id") or v["id"])
 def create_missing_cards(issues:Iterable[Issue],cards:Iterable[dict],run:Callable[[list[str]],str]=_run)->list[str]:

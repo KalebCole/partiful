@@ -133,6 +133,15 @@ class PumpHardeningTests(unittest.TestCase):
         self.assertEqual([], evidence.create_missing_cards([issue], [{"idempotency_key": "partiful:evidence:20", "status": "ready"}], lambda command: commands.append(command) or json.dumps({"id": "unused"})))
         self.assertEqual([], commands)
 
+    def test_kanban_list_payload_accepts_native_json_array(self) -> None:
+        cards = [{"id": "card-34", "status": "review", "idempotency_key": "partiful:implementation:34"}]
+        run = lambda _command: json.dumps(cards)
+        self.assertEqual(
+            [{"issue": 34, "paths": [], "card": "card-34"}],
+            implementation.discover_live_cards(run),
+        )
+        self.assertEqual(cards, evidence.discover_live_cards(run))
+
     def test_evidence_quiet_has_no_stdout_and_keeps_failure_status(self) -> None:
         stdout, stderr = io.StringIO(), io.StringIO()
         with patch.object(evidence, "fetch_issues", side_effect=RuntimeError("boom")), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -160,6 +169,10 @@ class PumpHardeningTests(unittest.TestCase):
         for environment in environments:
             self.assertEqual("/private/test-home", environment.get("HOME"))
             self.assertIn("PATH", environment)
+            self.assertIn(
+                "/private/test-home/.hermes/hermes-agent/venv/bin",
+                environment["PATH"].split(":"),
+            )
             self.assertNotIn("GH_TOKEN", environment)
             self.assertNotIn("UNRELATED_SECRET", environment)
 
