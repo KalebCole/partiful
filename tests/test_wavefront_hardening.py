@@ -48,6 +48,10 @@ class MergeGateHardeningTests(unittest.TestCase):
                 return json.dumps([{"body": review("APPROVE")}])
             if command == ["verify-local"]:
                 return ""
+            if command == ["git", "branch", "--show-current"]:
+                return "main"
+            if command == ["git", "checkout", "main"]:
+                return ""
             raise AssertionError(command)
 
         contract = {"paths": ["internal/app/**"], "required_checks": [], "verification": ["verify-local"]}

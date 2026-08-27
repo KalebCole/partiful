@@ -69,6 +69,8 @@ class SingleCardContractTests(unittest.TestCase):
         self.assertIn("partiful/issue-35", command)
         self.assertEqual("partiful-implementer", command[command.index("--assignee") + 1])
         self.assertNotIn("--parent", command)
+        self.assertNotIn("--goal", command)
+        self.assertNotIn("--goal-max-turns", command)
         self.assertNotIn("partiful-integrator", command)
 
 

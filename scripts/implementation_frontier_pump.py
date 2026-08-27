@@ -68,7 +68,7 @@ def _task_id(raw:str)->str:
  if not value: raise RuntimeError("Kanban create returned no task id")
  return str(value)
 def create_card(issue:Issue,run:Callable[[list[str]],str]=_run)->str:
- return _task_id(run(["hermes","kanban","--board",BOARD,"create",f"implement: #{issue.number} {issue.title}","--body",build_implement_body(issue),"--assignee","partiful-implementer","--workspace",WORKSPACE,"--branch",f"partiful/issue-{issue.number}","--tenant","partiful-wayfinder","--priority","80","--idempotency-key",f"partiful:implementation:{issue.number}","--max-runtime","2h","--max-retries","3","--goal","--goal-max-turns","30","--skill","test-driven-development","--json"]))
+ return _task_id(run(["hermes","kanban","--board",BOARD,"create",f"implement: #{issue.number} {issue.title}","--body",build_implement_body(issue),"--assignee","partiful-implementer","--workspace",WORKSPACE,"--branch",f"partiful/issue-{issue.number}","--tenant","partiful-wayfinder","--priority","80","--idempotency-key",f"partiful:implementation:{issue.number}","--max-runtime","2h","--max-retries","3","--skill","test-driven-development","--json"]))
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser(description=__doc__);p.add_argument("--issue",type=int);p.add_argument("--dry-run",action="store_true");p.add_argument("--quiet",action="store_true");a=p.parse_args(argv)
  try:

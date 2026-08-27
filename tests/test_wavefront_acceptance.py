@@ -46,6 +46,7 @@ class GateAcceptanceTests(unittest.TestCase):
         pr_views = iter([{"headRefOid": SHA, "files": [{"path": "internal/app/a.go"}], "statusCheckRollup": [{"name": "test", "conclusion": "SUCCESS"}]}, {"headRefOid": SHA, "files": [{"path": "internal/app/a.go"}], "statusCheckRollup": [{"name": "test", "conclusion": "SUCCESS"}]}, {"state": "MERGED"}])
         def run(cmd: list[str]) -> str:
             calls.append(cmd)
+            if cmd == ["git", "branch", "--show-current"]: return "main"
             if cmd[:3] == ["gh", "pr", "view"]: return json.dumps(next(pr_views))
             if cmd[:3] == ["gh", "api", "graphql"]: return json.dumps({"data": {"repository": {"issue": {"blockedBy": {"nodes": []}}}}})
             if "/comments" in " ".join(cmd): return json.dumps([{"body": "## Implementation review\nVerdict: APPROVE\nCommit: " + SHA + "\nRED: fail\nGREEN: pass\n" + "\n".join(f"Category-{x}: PASS" for x in CATEGORIES)}])
@@ -56,6 +57,7 @@ class GateAcceptanceTests(unittest.TestCase):
         merge_at = next(i for i, c in enumerate(calls) if c[:3] == ["gh", "pr", "merge"])
         self.assertGreaterEqual(sum(c[:3] == ["gh", "pr", "view"] for c in calls[:merge_at]), 2)
         self.assertEqual(["gh", "pr", "merge", "49", "--squash"], calls[merge_at])
+        self.assertEqual(["git", "checkout", "main"], calls[-1])
 
 
 class PumpAcceptanceTests(unittest.TestCase):

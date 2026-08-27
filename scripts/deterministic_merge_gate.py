@@ -55,11 +55,15 @@ def main(argv:list[str]|None=None)->int:
  try:
   contract=load_issue_contract(a.issue); packet=_packet(a.issue,a.pr,a.reviewed_sha,_run,contract);result=validate_gate(packet)
   if not result["ok"]:print(json.dumps(result,sort_keys=True));return 1
-  if checkout_verified_pr_head(a.pr)!=a.reviewed_sha:raise RuntimeError("detached head drift")
-  for command in contract.get("verification",[]):_run(split_verification_command(command))
-  # Re-read every mutable predicate immediately before merge.
-  final=validate_gate(_packet(a.issue,a.pr,a.reviewed_sha,_run,contract))
-  if not final["ok"]:print(json.dumps(final,sort_keys=True));return 1
-  _run(["gh","pr","merge",str(a.pr),"--squash"]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
+  branch=_run(["git","branch","--show-current"]).strip()
+  try:
+   if checkout_verified_pr_head(a.pr)!=a.reviewed_sha:raise RuntimeError("detached head drift")
+   for command in contract.get("verification",[]):_run(split_verification_command(command))
+   # Re-read every mutable predicate immediately before merge.
+   final=validate_gate(_packet(a.issue,a.pr,a.reviewed_sha,_run,contract))
+   if not final["ok"]:print(json.dumps(final,sort_keys=True));return 1
+   _run(["gh","pr","merge",str(a.pr),"--squash"]); merged=json.loads(_run(["gh","pr","view",str(a.pr),"--json","state"]));closed=json.loads(_run(["gh","issue","view",str(a.issue),"--json","state"]));final["merged"]=merged.get("state")=="MERGED" and closed.get("state")=="CLOSED";print(json.dumps(final,sort_keys=True));return 0 if final["merged"] else 1
+  finally:
+   if branch:_run(["git","checkout",branch])
  except (RuntimeError,KeyError,json.JSONDecodeError) as e:print(f"FAIL: {e}");return 1
 if __name__=="__main__":raise SystemExit(main())
