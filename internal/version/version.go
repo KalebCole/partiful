@@ -3,7 +3,7 @@ package version
 const (
 	CLIVersion                = "0.1.0"
 	CommandContractRevision   = "1"
-	TransportContractRevision = "2026-08-12.7"
+	TransportContractRevision = "2026-08-28.1"
 )
 
 // Info is the immutable public version result.

@@ -1,5 +1,5 @@
 {
-  "contractRevision": "2026-08-12.7",
+  "contractRevision": "2026-08-28.1",
   "contractPath": "spec/partiful.openapi.json",
   "allowedClassifications": [
     "dated-live-observation",
@@ -69,7 +69,8 @@
     "publicTextBlastCompletion20260812": "evidence/research/text-blasts.md#createtextblast-helper-and-completion",
     "publicTextBlastAllGuests20260812": "evidence/research/text-blasts.md#group-derivation-for-all-guests",
     "publicTextBlastPreconditions20260812": "evidence/research/text-blasts.md#host-only-precondition-reads",
-    "publicTextBlastCompletionLimit20260812": "evidence/research/text-blasts.md#completion-evidence-limit"
+    "publicTextBlastCompletionLimit20260812": "evidence/research/text-blasts.md#completion-evidence-limit",
+    "publicEventListRequests20260828": "evidence/research/events.md#event-read-one-response-event-list-calls"
   },
   "operations": {
     "createEvent": {
@@ -275,16 +276,16 @@
       "statusCitation": "evidence/research/authentication.md#official-firebase-callable-protocol"
     },
     "getMyUpcomingEventsForHomePage": {
-      "request": "unverified-inference",
-      "requestCitation": "evidence/README.md#unverified-inferences",
+      "request": "current-first-party-public-asset-research",
+      "requestCitation": "evidence/research/events.md#event-read-one-response-event-list-calls",
       "response": "dated-live-observation",
       "responseCitation": "evidence/research/events.md#event-list-observations",
       "status": "dated-live-observation",
       "statusCitation": "evidence/research/events.md#event-list-observations"
     },
     "getMyPastEventsForHomePage": {
-      "request": "unverified-inference",
-      "requestCitation": "evidence/README.md#unverified-inferences",
+      "request": "current-first-party-public-asset-research",
+      "requestCitation": "evidence/research/events.md#event-read-one-response-event-list-calls",
       "response": "dated-live-observation",
       "responseCitation": "evidence/research/events.md#event-list-observations",
       "status": "dated-live-observation",
@@ -1389,92 +1390,116 @@
       "citation": "evidence/README.md#unverified-inferences"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/operationId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/required": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/required/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/required/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/required/1": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo/type": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo/additionalProperties": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeDeviceId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeDeviceId/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId/format": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested/type": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested/const": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId/type/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId/type/1": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/requestBody/content/application~1json/schema/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyUpcomingEventsForHomePage/post/responses/200": {
       "classification": "dated-live-observation",
@@ -1537,92 +1562,116 @@
       "citation": "evidence/README.md#unverified-inferences"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/operationId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/required": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/required/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/required/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/required/1": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/params/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo/type": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/deviceInfo/additionalProperties": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeDeviceId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeDeviceId/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId/type": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/amplitudeSessionId/format": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested/type": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
+    },
+    "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/adminAccessRequested/const": {
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId/type/0": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/properties/userId/type/1": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/properties/data/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/requestBody/content/application~1json/schema/additionalProperties": {
-      "classification": "unverified-inference",
-      "citation": "evidence/README.md#unverified-inferences"
+      "classification": "current-first-party-public-asset-research",
+      "citation": "evidence/research/events.md#event-read-one-response-event-list-calls"
     },
     "#/paths/~1getMyPastEventsForHomePage/post/responses/200": {
       "classification": "dated-live-observation",

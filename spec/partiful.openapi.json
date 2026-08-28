@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Partiful remote API contract",
-    "version": "2026-08-12.7",
+    "version": "2026-08-28.1",
     "description": "Curated remote transport manuscript. Evidence classifications and uncertainty are recorded in evidence/ledger.json."
   },
   "servers": [
@@ -1117,13 +1117,23 @@
                     "type": "object",
                     "required": [
                       "params",
-                      "amplitudeDeviceId"
+                      "userId"
                     ],
                     "properties": {
                       "params": {
                         "type": "object",
                         "properties": {},
                         "additionalProperties": false
+                      },
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "deviceInfo": {
+                        "type": "object",
+                        "additionalProperties": true
                       },
                       "amplitudeDeviceId": {
                         "type": "string"
@@ -1132,11 +1142,9 @@
                         "type": "integer",
                         "format": "int64"
                       },
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                      "adminAccessRequested": {
+                        "type": "boolean",
+                        "const": true
                       }
                     },
                     "additionalProperties": false
@@ -1213,13 +1221,23 @@
                     "type": "object",
                     "required": [
                       "params",
-                      "amplitudeDeviceId"
+                      "userId"
                     ],
                     "properties": {
                       "params": {
                         "type": "object",
                         "properties": {},
                         "additionalProperties": false
+                      },
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "deviceInfo": {
+                        "type": "object",
+                        "additionalProperties": true
                       },
                       "amplitudeDeviceId": {
                         "type": "string"
@@ -1228,11 +1246,9 @@
                         "type": "integer",
                         "format": "int64"
                       },
-                      "userId": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                      "adminAccessRequested": {
+                        "type": "boolean",
+                        "const": true
                       }
                     },
                     "additionalProperties": false
