@@ -33,6 +33,13 @@ def _require_executable_gate(gate: str) -> None:
         raise VerificationError("unmet gate " + gate)
 
 
+def _observer_value(value: Any) -> bool | None:
+    """Return only the closed observer value schema safe for immutable audit."""
+    if type(value) is bool or value is None:
+        return value
+    return None
+
+
 def _approval_bytes(approval: MutationApproval) -> bytes:
     return json.dumps(
         approval.canonical_dict(), sort_keys=True, separators=(",", ":")
@@ -255,8 +262,8 @@ class MutationWrapper:
                     {
                         "phase": phase,
                         "name": "observer-unavailable",
-                        "expected": "authoritative-read",
-                        "actual": "unavailable",
+                        "expected": None,
+                        "actual": None,
                         "passed": False,
                     }
                 )
@@ -266,8 +273,8 @@ class MutationWrapper:
                     {
                         "phase": phase,
                         "name": "observer-unavailable",
-                        "expected": "authoritative-read",
-                        "actual": "invalid-result",
+                        "expected": None,
+                        "actual": None,
                         "passed": False,
                     }
                 )
@@ -276,8 +283,8 @@ class MutationWrapper:
             for assertion in approval.observer_assertions:
                 if assertion.phase != phase:
                     continue
-                actual = facts.get(assertion.name)
-                matched = actual == assertion.expected
+                actual = _observer_value(facts.get(assertion.name))
+                matched = assertion.name in facts and actual == assertion.expected
                 observed.append(
                     {
                         "phase": phase,

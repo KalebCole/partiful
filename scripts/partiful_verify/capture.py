@@ -13,6 +13,19 @@ from .models import VerificationError
 
 _DISCRIMINATOR = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 _STRUCTURAL_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")
+_STRUCTURAL_KEYS = frozenset(
+    {
+        "data",
+        "error",
+        "errors",
+        "metadata",
+        "operation",
+        "result",
+        "state",
+        "status",
+        "title",
+    }
+)
 _SENSITIVE_KEYS = (
     "authorization",
     "cookie",
@@ -34,8 +47,12 @@ _SENSITIVE_KEYS = (
 def _safe_structural_key(value: Any) -> bool:
     key = str(value)
     normalized = re.sub(r"[^a-z0-9]", "", key.lower())
-    return bool(_STRUCTURAL_KEY.fullmatch(key)) and not any(
+    return (
+        bool(_STRUCTURAL_KEY.fullmatch(key))
+        and key in _STRUCTURAL_KEYS
+        and not any(
         marker in key.lower() or marker in normalized for marker in _SENSITIVE_KEYS
+        )
     )
 
 

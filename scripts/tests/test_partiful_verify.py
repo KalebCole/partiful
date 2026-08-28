@@ -570,7 +570,7 @@ class MutationWrapperTests(unittest.TestCase):
 
 
 class ReviewRegressionTests(unittest.TestCase):
-    def test_observer_assertions_reject_private_strings_and_raw_identifier_keys(self) -> None:
+    def test_structural_capture_omits_opaque_identifier_keys(self) -> None:
         from scripts.partiful_verify.capture import structural_capture
 
         with self.assertRaisesRegex(VerificationError, "observer assertion"):
@@ -578,6 +578,51 @@ class ReviewRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(VerificationError, "observer assertion"):
             ObserverAssertion("after", "raw-identifier", True)
         self.assertEqual({}, structural_capture({"raw-identifier": "private-value"}))
+        self.assertEqual(
+            {},
+            structural_capture(
+                {
+                    "usr_7f3c9a": "private-user",
+                    "gst_8a1b2c": "private-guest",
+                    "evt_4d5e6f": "private-event",
+                }
+            ),
+        )
+
+    def test_observer_audit_omits_non_boolean_observer_values(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            approval = mutation_approval()
+            with patch(
+                "scripts.partiful_verify.wrappers.EXECUTABLE_GATE_MANIFEST",
+                FIXTURE_EXECUTABLE_GATES,
+            ):
+                bundle = MutationWrapper(
+                    approval=approval,
+                    gate_states={gate: True for gate in required_gates(approval)},
+                    approval_key=FIXTURE_KEY,
+                    use_registry=ApprovalUseRegistry(root / "uses"),
+                    audit_store=AuditStore(root / "audit"),
+                    raw_capture_root=root / "raw",
+                    now=lambda: NOW,
+                ).run(
+                    "b" * 64,
+                    lambda: True,
+                    lambda step: success_exchange(step.operation_id),
+                    lambda: lambda phase: {
+                        "mutation_observed": "PRIVATE-ACTUAL",
+                        "usr_7f3c9a": "private-user",
+                    },
+                )
+
+            persisted = bundle.path.read_text(encoding="utf-8")
+            self.assertNotIn("PRIVATE-ACTUAL", persisted)
+            self.assertNotIn("usr_7f3c9a", persisted)
+            self.assertNotIn("private-user", persisted)
+            payload = json.loads(persisted)
+            for observed in payload["observer_assertions"]:
+                self.assertIn(observed["actual"], (True, False, None))
+                self.assertIn(observed["expected"], (True, False, None))
 
     def test_capture_disposes_raw_file_when_serialization_fails(self) -> None:
         from scripts.partiful_verify.capture import capture_and_dispose
