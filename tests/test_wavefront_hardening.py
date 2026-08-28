@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import subprocess
+import sys
 import os
 import sqlite3
 import tempfile
@@ -373,8 +375,8 @@ class DurableContractHardeningTests(unittest.TestCase):
             "36": "go test ./internal/app -count=1",
             "37": "go test ./internal/app -count=1",
             "38": "go test ./internal/app -count=1",
-            "39": "go test ./internal/cli ./cmd/partiful -count=1",
-            "40": "go test ./internal/mcp ./cmd/partiful-mcp -count=1",
+            "39": "go test ./internal/cli -count=1",
+            "40": "go test ./internal/mcp -count=1",
             "41": "python3 scripts/smoke_binaries.py",
             "42": "python3 -m unittest discover -s scripts/tests -p 'test_*contract*.py' -v",
             "43": "python3 -m unittest discover -s scripts/tests -p 'test_partiful_verify.py' -v",
@@ -384,6 +386,33 @@ class DurableContractHardeningTests(unittest.TestCase):
             verification = set(issue_contract["verification"])
             self.assertTrue(shared <= verification, issue)
             self.assertIn(focused[issue], verification, issue)
+
+    def test_contract_verifier_rejects_verification_target_owned_by_later_slice(self) -> None:
+        verifier = ROOT / "scripts/verify_implementation_contracts.py"
+        valid = subprocess.run(
+            [sys.executable, str(verifier), str(ROOT / "config/implementation-write-sets.json")],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0, valid.returncode, valid.stderr or valid.stdout)
+
+        contract = json.loads((ROOT / "config/implementation-write-sets.json").read_text())
+        contract["39"]["verification"] = ["go test ./internal/cli ./cmd/partiful -count=1"]
+        with tempfile.TemporaryDirectory() as tmp:
+            bad_contract = Path(tmp) / "contracts.json"
+            bad_contract.write_text(json.dumps(contract))
+            invalid = subprocess.run(
+                [sys.executable, str(verifier), str(bad_contract)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+        self.assertNotEqual(0, invalid.returncode)
+        self.assertIn(
+            "issue 39 verification target ./cmd/partiful is owned by later issue 41",
+            invalid.stderr,
+        )
 
 
 if __name__ == "__main__":
