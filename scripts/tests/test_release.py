@@ -165,6 +165,27 @@ class PublicationGateTest(unittest.TestCase):
             sbom_path.write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
             self.assertIn("sbom version mismatch", verify_release.verify_release_directory(output))
 
+    def test_release_verifier_rejects_checksum_valid_sboms_missing_required_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for path in (("name",), ("packages", 0, "licenseConcluded"), ("relationships",)):
+                with self.subTest(path=path):
+                    output = self._fixture_release(Path(temporary))
+                    sbom_path = output / "sbom.spdx.json"
+                    sbom = json.loads(sbom_path.read_text())
+                    item = sbom
+                    for key in path[:-1]:
+                        item = item[key]
+                    del item[path[-1]]
+                    sbom_path.write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
+                    checksum_path = output / "checksums.txt"
+                    checksums = checksum_path.read_text().splitlines()
+                    checksum_path.write_text("\n".join(
+                        f"{hashlib.sha256(sbom_path.read_bytes()).hexdigest()}  sbom.spdx.json"
+                        if line.endswith("  sbom.spdx.json") else line
+                        for line in checksums
+                    ) + "\n")
+                    self.assertIn("invalid sbom", verify_release.verify_release_directory(output))
+
     def test_release_verifier_rejects_a_checksum_manifest_missing_a_required_archive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))

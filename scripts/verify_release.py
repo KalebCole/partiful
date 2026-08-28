@@ -50,6 +50,8 @@ def sbom_failures(sbom: object, manifest: dict[str, object]) -> list[str]:
     }
     if any(sbom.get(key) != value for key, value in required_document.items()):
         return ["invalid sbom"]
+    if sbom.get("name") != f"partiful-{manifest.get('version')}":
+        return ["invalid sbom"]
     creation = sbom.get("creationInfo")
     packages = sbom.get("packages")
     if not isinstance(creation, dict) or not isinstance(creation.get("created"), str) or creation.get("creators") != ["Tool: partiful-release"]:
@@ -63,10 +65,24 @@ def sbom_failures(sbom: object, manifest: dict[str, object]) -> list[str]:
     package = packages[0]
     if package.get("SPDXID") != "SPDXRef-Package-partiful" or package.get("name") != "partiful" or package.get("downloadLocation") != "NOASSERTION":
         return ["invalid sbom"]
+    required_package = {
+        "filesAnalyzed": False,
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "copyrightText": "NOASSERTION",
+    }
+    if any(package.get(key) != value for key, value in required_package.items()):
+        return ["invalid sbom"]
     if package.get("versionInfo") != manifest.get("version"):
         return ["sbom version mismatch"]
     if sbom.get("documentNamespace") != f"https://github.com/KalebCole/partiful/releases/{manifest.get('version')}/{manifest.get('source_revision')}":
         return ["sbom revision mismatch"]
+    if sbom.get("relationships") != [{
+        "spdxElementId": "SPDXRef-DOCUMENT",
+        "relationshipType": "DESCRIBES",
+        "relatedSpdxElement": "SPDXRef-Package-partiful",
+    }]:
+        return ["invalid sbom"]
     return []
 
 
