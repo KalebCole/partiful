@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import re
@@ -36,6 +37,37 @@ def publication_failures(packet: PublicationPacket) -> list[str]:
     if packet.mcp_stdio_interop_gate != "CLOSED":
         failures.append(f"MCP16-STDIO-INTEROP is {packet.mcp_stdio_interop_gate}")
     return failures
+
+
+def sbom_failures(sbom: object, manifest: dict[str, object]) -> list[str]:
+    """Validate the required SPDX 2.3 release-document shape and identity."""
+    if not isinstance(sbom, dict):
+        return ["invalid sbom"]
+    required_document = {
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "spdxVersion": "SPDX-2.3",
+        "dataLicense": "CC0-1.0",
+    }
+    if any(sbom.get(key) != value for key, value in required_document.items()):
+        return ["invalid sbom"]
+    creation = sbom.get("creationInfo")
+    packages = sbom.get("packages")
+    if not isinstance(creation, dict) or not isinstance(creation.get("created"), str) or creation.get("creators") != ["Tool: partiful-release"]:
+        return ["invalid sbom"]
+    try:
+        datetime.datetime.fromisoformat(creation["created"].replace("Z", "+00:00"))
+    except ValueError:
+        return ["invalid sbom"]
+    if not isinstance(packages, list) or len(packages) != 1 or not isinstance(packages[0], dict):
+        return ["invalid sbom"]
+    package = packages[0]
+    if package.get("SPDXID") != "SPDXRef-Package-partiful" or package.get("name") != "partiful" or package.get("downloadLocation") != "NOASSERTION":
+        return ["invalid sbom"]
+    if package.get("versionInfo") != manifest.get("version"):
+        return ["sbom version mismatch"]
+    if sbom.get("documentNamespace") != f"https://github.com/KalebCole/partiful/releases/{manifest.get('version')}/{manifest.get('source_revision')}":
+        return ["sbom revision mismatch"]
+    return []
 
 
 def verify_release_directory(directory: Path, expected_revision: str | None = None) -> list[str]:
@@ -83,8 +115,14 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
             artifact = directory / name
             if not artifact.is_file() or hashlib.sha256(artifact.read_bytes()).hexdigest() != digest:
                 failures.append(f"invalid checksum: {name}")
-    if not (directory / "sbom.spdx.json").is_file():
+    sbom_path = directory / "sbom.spdx.json"
+    if not sbom_path.is_file():
         failures.append("missing sbom.spdx.json")
+    else:
+        try:
+            failures.extend(sbom_failures(json.loads(sbom_path.read_text()), manifest))
+        except (OSError, json.JSONDecodeError):
+            failures.append("invalid sbom")
     return failures
 
 

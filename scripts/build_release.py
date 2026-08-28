@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import gzip
 import hashlib
 import json
@@ -108,6 +109,34 @@ def _toolchain_metadata() -> dict[str, str]:
     return {"go": completed.stdout.strip() if completed.returncode == 0 else "unavailable", "build_flags": "-trimpath -mod=readonly -buildvcs=false"}
 
 
+def spdx_document(*, version: str, source_revision: str, source_date_epoch: int) -> dict[str, object]:
+    """Return the deterministic SPDX 2.3 inventory for one immutable release."""
+    created = datetime.datetime.fromtimestamp(source_date_epoch, tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+    return {
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "spdxVersion": "SPDX-2.3",
+        "dataLicense": "CC0-1.0",
+        "name": f"partiful-{version}",
+        "documentNamespace": f"https://github.com/KalebCole/partiful/releases/{version}/{source_revision}",
+        "creationInfo": {"created": created, "creators": ["Tool: partiful-release"]},
+        "packages": [{
+            "SPDXID": "SPDXRef-Package-partiful",
+            "name": "partiful",
+            "versionInfo": version,
+            "downloadLocation": "NOASSERTION",
+            "filesAnalyzed": False,
+            "licenseConcluded": "NOASSERTION",
+            "licenseDeclared": "NOASSERTION",
+            "copyrightText": "NOASSERTION",
+        }],
+        "relationships": [{
+            "spdxElementId": "SPDXRef-DOCUMENT",
+            "relationshipType": "DESCRIBES",
+            "relatedSpdxElement": "SPDXRef-Package-partiful",
+        }],
+    }
+
+
 def build_release(*, output: Path, version: str, source_date_epoch: int, source_revision: str, runner: Runner = subprocess_runner, smoke: Smoke | None = None) -> dict:
     if not version.startswith("v") or not source_revision or len(source_revision) != 40:
         raise ValueError("version must be a v-prefixed tag and source_revision must be 40 characters")
@@ -132,7 +161,8 @@ def build_release(*, output: Path, version: str, source_date_epoch: int, source_
             archives.append({"target": target.name, "archive": filename, "binaries": list(BINARY_NAMES), "sha256": sha256(output / filename)})
     metadata = {"version": version, "source_revision": source_revision, "source_date_epoch": source_date_epoch, "toolchain": _toolchain_metadata(), "targets": archives}
     (output / "manifest.json").write_text(json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n")
-    (output / "sbom.spdx.json").write_text(json.dumps({"spdxVersion": "SPDX-2.3", "name": "partiful", "versionInfo": version, "creationInfo": {"created": source_date_epoch}, "packages": [{"name": "partiful", "versionInfo": version, "downloadLocation": "NOASSERTION"}]}, sort_keys=True, separators=(",", ":")) + "\n")
+    sbom = spdx_document(version=version, source_revision=source_revision, source_date_epoch=source_date_epoch)
+    (output / "sbom.spdx.json").write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
     checksums = [f"{item['sha256']}  {item['archive']}" for item in archives]
     checksums.extend(f"{sha256(output / name)}  {name}" for name in ("manifest.json", "sbom.spdx.json"))
     (output / "checksums.txt").write_text("\n".join(sorted(checksums)) + "\n")

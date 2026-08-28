@@ -140,6 +140,31 @@ class PublicationGateTest(unittest.TestCase):
             checksum = hashlib.sha256((output / "checksums.txt").read_bytes()).hexdigest()
             self.assertRegex(checksum, r"^[0-9a-f]{64}$")
 
+    def test_release_build_emits_a_deterministic_spdx_2_3_document_for_the_release(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            sbom = json.loads((output / "sbom.spdx.json").read_text())
+            self.assertEqual(sbom["spdxVersion"], "SPDX-2.3")
+            self.assertEqual(sbom["dataLicense"], "CC0-1.0")
+            self.assertEqual(sbom["SPDXID"], "SPDXRef-DOCUMENT")
+            self.assertEqual(sbom["creationInfo"]["created"], "2023-11-14T22:13:20Z")
+            self.assertEqual(sbom["creationInfo"]["creators"], ["Tool: partiful-release"])
+            self.assertEqual(sbom["packages"][0]["SPDXID"], "SPDXRef-Package-partiful")
+            self.assertEqual(verify_release.verify_release_directory(output), [])
+
+    def test_release_verifier_rejects_a_malformed_or_semantically_mismatched_sbom(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            sbom_path = output / "sbom.spdx.json"
+            sbom = json.loads(sbom_path.read_text())
+            del sbom["dataLicense"]
+            sbom_path.write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
+            self.assertIn("invalid sbom", verify_release.verify_release_directory(output))
+            sbom["dataLicense"] = "CC0-1.0"
+            sbom["packages"][0]["versionInfo"] = "v9.9.9"
+            sbom_path.write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
+            self.assertIn("sbom version mismatch", verify_release.verify_release_directory(output))
+
     def test_release_verifier_rejects_a_checksum_manifest_missing_a_required_archive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
