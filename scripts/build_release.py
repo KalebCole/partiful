@@ -14,12 +14,14 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+import re
 from dataclasses import dataclass
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_SYMBOL = "github.com/KalebCole/partiful/internal/version.CLIVersion"
 BINARY_NAMES = ("partiful", "partiful-mcp")
+SEMVER_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$")
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,24 @@ def archive_binary_names(target: Target) -> list[str]:
     return [f"{binary}{suffix}" for binary in BINARY_NAMES]
 
 
+def archive_name(version: str, target: Target) -> str:
+    extension = "tar.gz" if target.archive_format == "tar.gz" else "zip"
+    return f"partiful_{version}_{target.goos}_{target.goarch}.{extension}"
+
+
+def release_fields(version: str) -> dict[str, str]:
+    """Read the two reviewed source-owned revisions for release evidence."""
+    source = (ROOT / "internal/version/version.go").read_text()
+    revisions = dict(re.findall(r"(CommandContractRevision|TransportContractRevision)\s*=\s*\"([^\"]+)\"", source))
+    if set(revisions) != {"CommandContractRevision", "TransportContractRevision"}:
+        raise RuntimeError("unable to read reviewed release contract revisions")
+    return {
+        "cli_version": version,
+        "command_contract_revision": revisions["CommandContractRevision"],
+        "transport_contract_revision": revisions["TransportContractRevision"],
+    }
+
+
 def release_digest(directory: Path) -> dict[str, str]:
     return {path.relative_to(directory).as_posix(): sha256(path) for path in sorted(directory.rglob("*")) if path.is_file()}
 
@@ -114,7 +134,7 @@ def _toolchain_metadata() -> dict[str, str]:
     return {"go": completed.stdout.strip() if completed.returncode == 0 else "unavailable", "build_flags": "-trimpath -mod=readonly -buildvcs=false"}
 
 
-def spdx_document(*, version: str, source_revision: str, source_date_epoch: int) -> dict[str, object]:
+def spdx_document(*, version: str, source_revision: str, source_date_epoch: int, fields: dict[str, str]) -> dict[str, object]:
     """Return the deterministic SPDX 2.3 inventory for one immutable release."""
     created = datetime.datetime.fromtimestamp(source_date_epoch, tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
     return {
@@ -139,16 +159,24 @@ def spdx_document(*, version: str, source_revision: str, source_date_epoch: int)
             "relationshipType": "DESCRIBES",
             "relatedSpdxElement": "SPDXRef-Package-partiful",
         }],
+        "annotations": [{
+            "annotationType": "OTHER",
+            "annotator": "Tool: partiful-release",
+            "annotationDate": created,
+            "comment": json.dumps(fields, sort_keys=True, separators=(",", ":")),
+            "spdxElementId": "SPDXRef-DOCUMENT",
+        }],
     }
 
 
 def build_release(*, output: Path, version: str, source_date_epoch: int, source_revision: str, runner: Runner = subprocess_runner, smoke: Smoke | None = None) -> dict:
-    if not version.startswith("v") or not source_revision or len(source_revision) != 40:
-        raise ValueError("version must be a v-prefixed tag and source_revision must be 40 characters")
+    if not SEMVER_TAG.fullmatch(version) or not re.fullmatch(r"[0-9a-f]{40}", source_revision):
+        raise ValueError("version must be a vX.Y.Z semantic tag and source_revision must be 40 lowercase hex characters")
     if output.exists():
         shutil.rmtree(output)
     output.mkdir(parents=True)
     archives: list[dict[str, object]] = []
+    fields = release_fields(version)
     with tempfile.TemporaryDirectory(prefix="partiful-release-") as temporary:
         staging = Path(temporary)
         for target in TARGETS:
@@ -160,17 +188,16 @@ def build_release(*, output: Path, version: str, source_date_epoch: int, source_
                 runner(go_build_command(target=target, binary=binary, output=target_stage / f"{binary}{suffix}", version=version), environment)
             if smoke is not None:
                 smoke(target_stage, target)
-            extension = "tar.gz" if target.archive_format == "tar.gz" else "zip"
-            filename = f"partiful_{version}_{target.name}.{extension}"
+            filename = archive_name(version, target)
             archive_target(target_stage, output / filename, target, source_date_epoch)
-            archives.append({"target": target.name, "archive": filename, "binaries": archive_binary_names(target), "sha256": sha256(output / filename)})
-    metadata = {"version": version, "source_revision": source_revision, "source_date_epoch": source_date_epoch, "toolchain": _toolchain_metadata(), "targets": archives}
+            archives.append({"target": target.name, "archive": filename, "binaries": archive_binary_names(target), "sha256": sha256(output / filename), "release_fields": fields})
+    metadata = {"version": version, "source_revision": source_revision, "source_date_epoch": source_date_epoch, "toolchain": _toolchain_metadata(), "release_fields": fields, "targets": archives}
     (output / "manifest.json").write_text(json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n")
-    sbom = spdx_document(version=version, source_revision=source_revision, source_date_epoch=source_date_epoch)
+    sbom = spdx_document(version=version, source_revision=source_revision, source_date_epoch=source_date_epoch, fields=fields)
     (output / "sbom.spdx.json").write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
     checksums = [f"{item['sha256']}  {item['archive']}" for item in archives]
     checksums.extend(f"{sha256(output / name)}  {name}" for name in ("manifest.json", "sbom.spdx.json"))
-    (output / "checksums.txt").write_text("\n".join(sorted(checksums)) + "\n")
+    (output / "SHA256SUMS").write_text("\n".join(sorted(checksums)) + "\n")
     return metadata
 
 

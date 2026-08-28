@@ -21,6 +21,40 @@ from scripts import build_release, verify_release
 
 
 class ReleaseBuildTest(unittest.TestCase):
+    def test_release_uses_semantic_tagged_names_and_binds_all_version_fields_per_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "release"
+            metadata = build_release.build_release(
+                output=output,
+                version="v1.2.3",
+                source_date_epoch=1_700_000_000,
+                source_revision="f" * 40,
+                runner=build_release.fixture_runner,
+                smoke=lambda *_: None,
+            )
+            fields = {
+                "cli_version": "v1.2.3",
+                "command_contract_revision": "1",
+                "transport_contract_revision": "2026-08-12.7",
+            }
+            self.assertEqual(metadata["release_fields"], fields)
+            self.assertTrue((output / "SHA256SUMS").is_file())
+            self.assertFalse((output / "checksums.txt").exists())
+            for target in build_release.TARGETS:
+                extension = "zip" if target.goos == "windows" else "tar.gz"
+                self.assertTrue((output / f"partiful_v1.2.3_{target.goos}_{target.goarch}.{extension}").is_file())
+            self.assertTrue(all(item["release_fields"] == fields for item in metadata["targets"]))
+            self.assertEqual(verify_release.verify_release_directory(output), [])
+        for version in ("vbanana", "v1", "v1.2", "1.2.3"):
+            with self.assertRaises(ValueError):
+                build_release.build_release(
+                    output=Path(tempfile.gettempdir()) / "invalid-release-version",
+                    version=version,
+                    source_date_epoch=1_700_000_000,
+                    source_revision="f" * 40,
+                    runner=build_release.fixture_runner,
+                )
+
     def test_archive_matrix_contains_both_binaries_for_all_five_supported_targets(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "release"
@@ -143,7 +177,7 @@ class PublicationGateTest(unittest.TestCase):
             )
             failures = verify_release.verify_release_directory(output)
             self.assertEqual(failures, [])
-            checksum = hashlib.sha256((output / "checksums.txt").read_bytes()).hexdigest()
+            checksum = hashlib.sha256((output / "SHA256SUMS").read_bytes()).hexdigest()
             self.assertRegex(checksum, r"^[0-9a-f]{64}$")
 
     def test_release_build_emits_a_deterministic_spdx_2_3_document_for_the_release(self) -> None:
@@ -183,7 +217,7 @@ class PublicationGateTest(unittest.TestCase):
                         item = item[key]
                     del item[path[-1]]
                     sbom_path.write_text(json.dumps(sbom, sort_keys=True, separators=(",", ":")) + "\n")
-                    checksum_path = output / "checksums.txt"
+                    checksum_path = output / "SHA256SUMS"
                     checksums = checksum_path.read_text().splitlines()
                     checksum_path.write_text("\n".join(
                         f"{hashlib.sha256(sbom_path.read_bytes()).hexdigest()}  sbom.spdx.json"
@@ -195,37 +229,37 @@ class PublicationGateTest(unittest.TestCase):
     def test_release_verifier_rejects_a_checksum_manifest_missing_a_required_archive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
-            checksums = (output / "checksums.txt").read_text().splitlines()
-            (output / "checksums.txt").write_text(
-                "\n".join(line for line in checksums if "darwin-amd64" not in line) + "\n"
+            checksums = (output / "SHA256SUMS").read_text().splitlines()
+            (output / "SHA256SUMS").write_text(
+                "\n".join(line for line in checksums if "darwin_amd64" not in line) + "\n"
             )
             self.assertIn("checksum manifest artifact set mismatch", verify_release.verify_release_directory(output))
 
     def test_release_verifier_rejects_duplicate_checksum_entries(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
-            checksums = (output / "checksums.txt").read_text()
-            (output / "checksums.txt").write_text(checksums + checksums.splitlines()[0] + "\n")
+            checksums = (output / "SHA256SUMS").read_text()
+            (output / "SHA256SUMS").write_text(checksums + checksums.splitlines()[0] + "\n")
             self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
 
     def test_release_verifier_rejects_malformed_checksum_entries(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
-            (output / "checksums.txt").write_text("malformed\n")
+            (output / "SHA256SUMS").write_text("malformed\n")
             self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
 
     def test_release_verifier_rejects_unexpected_checksum_entries(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
-            checksums = (output / "checksums.txt").read_text()
-            (output / "checksums.txt").write_text(checksums + ("0" * 64) + "  unexpected.txt\n")
+            checksums = (output / "SHA256SUMS").read_text()
+            (output / "SHA256SUMS").write_text(checksums + ("0" * 64) + "  unexpected.txt\n")
             self.assertIn("checksum manifest artifact set mismatch", verify_release.verify_release_directory(output))
 
     def test_release_verifier_rejects_path_escaping_checksum_entries(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = self._fixture_release(Path(temporary))
-            checksums = (output / "checksums.txt").read_text().replace("  manifest.json", "  ../manifest.json")
-            (output / "checksums.txt").write_text(checksums)
+            checksums = (output / "SHA256SUMS").read_text().replace("  manifest.json", "  ../manifest.json")
+            (output / "SHA256SUMS").write_text(checksums)
             self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
 
     def test_release_verifier_rejects_archives_with_invalid_binary_members(self) -> None:
@@ -260,6 +294,14 @@ class PublicationGateTest(unittest.TestCase):
                     change(output)
                     self.assertTrue(any(failure.startswith("invalid target evidence") for failure in verify_release.verify_release_directory(output)))
 
+    def test_release_verifier_rejects_nonexecutable_regular_archive_members(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for target in (build_release.TARGETS[0], build_release.TARGETS[-1]):
+                with self.subTest(target=target.name):
+                    output = self._fixture_release(Path(temporary))
+                    self._replace_archive_members(output, target, build_release.archive_binary_names(target), executable=False)
+                    self.assertTrue(any(failure.startswith("invalid archive members") for failure in verify_release.verify_release_directory(output)))
+
     def test_release_workflow_checks_out_the_selected_tag_commit_before_verification(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         selection = workflow.index("- name: Select immutable release inputs")
@@ -269,6 +311,20 @@ class PublicationGateTest(unittest.TestCase):
         self.assertLess(checkout, verification)
         self.assertIn("ref: ${{ steps.release.outputs.revision }}", workflow[checkout:verification])
         self.assertIn('test "$(git rev-parse HEAD)" = "${{ steps.release.outputs.revision }}"', workflow[checkout:verification])
+
+    def test_release_workflow_smokes_exact_archives_on_each_native_target_before_publish(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        native_smoke = workflow.index("native-smoke:")
+        publish = workflow.index("publish:")
+        self.assertLess(native_smoke, publish)
+        section = workflow[native_smoke:publish]
+        self.assertIn("runs-on: ${{ matrix.runner }}", section)
+        self.assertIn("archive: partiful_${{ needs.build.outputs.version }}", section)
+        self.assertIn("--version", section)
+        self.assertIn("--help", section)
+        self.assertIn("initialize", section)
+        self.assertIn("SIGINT", section)
+        self.assertIn("SIGTERM", section)
 
     def _fixture_release(self, root: Path) -> Path:
         output = root / "release"
@@ -282,7 +338,7 @@ class PublicationGateTest(unittest.TestCase):
         )
         return output
 
-    def _replace_archive_members(self, output: Path, target: build_release.Target, members: list[str], member_type: str = "file") -> None:
+    def _replace_archive_members(self, output: Path, target: build_release.Target, members: list[str], member_type: str = "file", executable: bool = True) -> None:
         manifest_path = output / "manifest.json"
         manifest = json.loads(manifest_path.read_text())
         item = next(item for item in manifest["targets"] if item["target"] == target.name)
@@ -298,6 +354,7 @@ class PublicationGateTest(unittest.TestCase):
                         rewritten.addfile(info)
                     else:
                         info.size = len(payload)
+                        info.mode = 0o755 if executable else 0o644
                         rewritten.addfile(info, io.BytesIO(payload))
         else:
             with warnings.catch_warnings():
@@ -308,6 +365,8 @@ class PublicationGateTest(unittest.TestCase):
                         if member_type == "symlink":
                             info.create_system = 3
                             info.external_attr = 0o120777 << 16
+                        else:
+                            info.external_attr = (0o100755 if executable else 0o100644) << 16
                         rewritten.writestr(info, member)
         item["sha256"] = hashlib.sha256(archive.read_bytes()).hexdigest()
         manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
@@ -336,10 +395,10 @@ class PublicationGateTest(unittest.TestCase):
         self._refresh_checksums(output)
 
     def _refresh_checksums(self, output: Path) -> None:
-        hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in output.iterdir() if path.is_file() and path.name != "checksums.txt"}
-        (output / "checksums.txt").write_text("\n".join(
+        hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in output.iterdir() if path.is_file() and path.name != "SHA256SUMS"}
+        (output / "SHA256SUMS").write_text("\n".join(
             f"{hashes.get(line.split('  ', 1)[1], line.split('  ', 1)[0])}  {line.split('  ', 1)[1]}"
-            for line in (output / "checksums.txt").read_text().splitlines()
+            for line in (output / "SHA256SUMS").read_text().splitlines()
         ) + "\n")
 
 

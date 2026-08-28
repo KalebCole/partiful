@@ -16,7 +16,7 @@ import zipfile
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.build_release import TARGETS
+from scripts.build_release import TARGETS, archive_name
 
 
 @dataclass(frozen=True)
@@ -86,6 +86,15 @@ def sbom_failures(sbom: object, manifest: dict[str, object]) -> list[str]:
         "relatedSpdxElement": "SPDXRef-Package-partiful",
     }]:
         return ["invalid sbom"]
+    expected_annotation = [{
+        "annotationType": "OTHER",
+        "annotator": "Tool: partiful-release",
+        "annotationDate": creation["created"],
+        "comment": json.dumps(manifest.get("release_fields"), sort_keys=True, separators=(",", ":")),
+        "spdxElementId": "SPDXRef-DOCUMENT",
+    }]
+    if sbom.get("annotations") != expected_annotation:
+        return ["invalid sbom"]
     return []
 
 
@@ -102,13 +111,13 @@ def archive_member_failures(archive: Path, target: object, binaries: object) -> 
         if target_format == "tar.gz":
             with tarfile.open(archive, "r:gz") as package:
                 entries = package.getmembers()
-                if not all(member.isfile() for member in entries):
+                if not all(member.isfile() and member.mode & 0o111 for member in entries):
                     return [f"invalid archive members: {target_name}"]
                 members = [member.name for member in entries]
         else:
             with zipfile.ZipFile(archive) as package:
                 entries = package.infolist()
-                if not all(stat.S_ISREG(entry.external_attr >> 16) for entry in entries):
+                if not all(stat.S_ISREG(entry.external_attr >> 16) and entry.external_attr >> 16 & 0o111 for entry in entries):
                     return [f"invalid archive members: {target_name}"]
                 members = [entry.filename for entry in entries]
     except (OSError, tarfile.TarError, zipfile.BadZipFile):
@@ -127,6 +136,10 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
     if expected_revision and manifest.get("source_revision") != expected_revision:
         failures.append("release revision mismatch")
     archives = manifest.get("targets", [])
+    fields = manifest.get("release_fields")
+    required_field_names = {"cli_version", "command_contract_revision", "transport_contract_revision"}
+    if not isinstance(fields, dict) or set(fields) != required_field_names or fields.get("cli_version") != manifest.get("version") or not all(isinstance(value, str) and value for value in fields.values()):
+        failures.append("invalid release fields")
     expected_targets = {target.name for target in TARGETS}
     if not isinstance(archives, list) or any(not isinstance(item, dict) for item in archives):
         failures.append("invalid target evidence: matrix")
@@ -140,22 +153,24 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
         if not item:
             failures.append(f"missing target evidence: {target.name}")
             continue
-        extension = "tar.gz" if target.archive_format == "tar.gz" else "zip"
-        expected_archive = f"partiful_{manifest.get('version', '')}_{target.name}.{extension}"
+        expected_archive = archive_name(str(manifest.get("version", "")), target)
         if item.get("archive") != expected_archive:
             failures.append(f"invalid target evidence: {target.name}")
+            continue
+        if item.get("release_fields") != fields:
+            failures.append(f"invalid release fields: {target.name}")
             continue
         archive = directory / expected_archive
         if not archive.is_file() or item.get("sha256") != hashlib.sha256(archive.read_bytes()).hexdigest():
             failures.append(f"invalid archive evidence: {target.name}")
             continue
         failures.extend(archive_member_failures(archive, target, item.get("binaries")))
-    checksum_path = directory / "checksums.txt"
+    checksum_path = directory / "SHA256SUMS"
     if not checksum_path.is_file():
-        failures.append("missing checksums.txt")
+        failures.append("missing SHA256SUMS")
     else:
         required_names = {
-            f"partiful_{manifest.get('version', '')}_{target.name}.{'tar.gz' if target.archive_format == 'tar.gz' else 'zip'}"
+            archive_name(str(manifest.get("version", "")), target)
             for target in TARGETS
         } | {"manifest.json", "sbom.spdx.json"}
         entries: dict[str, str] = {}
