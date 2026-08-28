@@ -568,6 +568,68 @@ class MutationWrapperTests(unittest.TestCase):
             payload = json.loads(bundle.path.read_text(encoding="utf-8"))
             self.assertEqual("fixture-owner", payload["retention"]["owner_alias"])
 
+    def test_stale_retention_during_valid_approval_causes_zero_dispatch(self) -> None:
+        retention = RetentionPlan(
+            owner_alias="fixture-owner",
+            terminal_state="invitation-recorded",
+            retain_until=NOW + timedelta(days=1),
+            review_url="https://github.com/KalebCole/partiful/issues/43",
+        )
+        approval = mutation_approval(
+            run_id="5" * 32,
+            expires_at=NOW + timedelta(days=3),
+            steps=(MutationStep("primary", "addInvitedGuestsAsHost"),),
+            assertions=(ObserverAssertion("after", "mutation_observed", True),),
+            accounts=(
+                ("fixture_owner", "fixture-owner"),
+                ("test_recipient", "test-recipient"),
+            ),
+            retention=retention,
+        )
+        calls: list[str] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            wrapper = self._wrapper(Path(tmp), approval)
+            wrapper.now = lambda: NOW + timedelta(days=2)
+            with self.assertRaisesRegex(VerificationError, "retention deadline"):
+                wrapper.run(
+                    "b" * 64,
+                    lambda: True,
+                    lambda step: calls.append(step.operation_id)
+                    or success_exchange(step.operation_id),
+                    lambda: lambda phase: {"mutation_observed": True},
+                )
+        self.assertEqual([], calls)
+
+    def test_retention_must_cover_the_entire_approval_window(self) -> None:
+        retention = RetentionPlan(
+            owner_alias="fixture-owner",
+            terminal_state="invitation-recorded",
+            retain_until=NOW + timedelta(days=1),
+            review_url="https://github.com/KalebCole/partiful/issues/43",
+        )
+        approval = mutation_approval(
+            run_id="6" * 32,
+            expires_at=NOW + timedelta(days=3),
+            steps=(MutationStep("primary", "addInvitedGuestsAsHost"),),
+            assertions=(ObserverAssertion("after", "mutation_observed", True),),
+            accounts=(
+                ("fixture_owner", "fixture-owner"),
+                ("test_recipient", "test-recipient"),
+            ),
+            retention=retention,
+        )
+        calls: list[str] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(VerificationError, "cover approval window"):
+                self._wrapper(Path(tmp), approval).run(
+                    "b" * 64,
+                    lambda: True,
+                    lambda step: calls.append(step.operation_id)
+                    or success_exchange(step.operation_id),
+                    lambda: lambda phase: {"mutation_observed": True},
+                )
+        self.assertEqual([], calls)
+
 
 class ReviewRegressionTests(unittest.TestCase):
     def test_structural_capture_omits_opaque_identifier_keys(self) -> None:

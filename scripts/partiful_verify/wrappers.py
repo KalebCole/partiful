@@ -202,6 +202,11 @@ class MutationWrapper:
             raise VerificationError("approval window has not started")
         if current >= approval.expires_at:
             raise VerificationError("approval expired")
+        if approval.retention is not None:
+            if approval.retention.retain_until < approval.expires_at:
+                raise VerificationError("retention deadline must cover approval window")
+            if current >= approval.retention.retain_until:
+                raise VerificationError("retention deadline is stale")
         if not hmac.compare_digest(
             rendered_operation_digest, approval.rendered_operation_digest
         ):
@@ -211,8 +216,11 @@ class MutationWrapper:
         self.use_registry.claim(approval.run_id, approval.signature)
         if preflight() is not True:
             raise VerificationError("preflight stop condition failed")
-        if self.now() >= approval.expires_at:
+        current = self.now()
+        if current >= approval.expires_at:
             raise VerificationError("approval expired during preflight")
+        if approval.retention is not None and current >= approval.retention.retain_until:
+            raise VerificationError("retention deadline became stale during preflight")
 
         operation_log: list[dict[str, Any]] = []
         disposal_proofs: list[dict[str, Any]] = []
