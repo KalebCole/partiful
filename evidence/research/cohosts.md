@@ -137,3 +137,50 @@ No current public asset proves persisted cohost state, invitation delivery,
 link delivery, access grant, revocation side effect, or any error mapping.
 Every received non-`200` status, endpoint error, and unseen response shape
 remains explicit unknown.
+
+## OP11 cohost-state-read conclusion
+
+A credential-free recheck on 2026-08-28 used the public `/login`,
+`/e/hermes-evidence-placeholder`, and
+`/events/hermes-evidence-placeholder/edit` route responses. The placeholder
+event did not identify a real event or user. The probe made no authenticated
+request and no mutation. It enumerated 29 unique first-party JavaScript assets
+from those responses and retained the assets that define the cohost read path:
+
+| Asset | SHA-256 | Relevant modules |
+| --- | --- | --- |
+| <https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H> | `7df0479beab97444f9619534ef2903e89a7a690601b758523b6550fa9713e2ff` | route/chunk map |
+| <https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H> | `73b988c55401f68c265ac6b223b85ceae67f3be76efea2d56fd10333b7920bbf` | `99181`, `47186`, `35104`, `17959`, `70820` |
+| <https://partiful.com/_next/static/chunks/7671-a28136ed178ff983.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H> | `81c31904157d8406d42881b5eb48863940bf89a3952b9ae1ded1f65fadd19898` | `61713` |
+| <https://partiful.com/_next/static/chunks/4729-2818558cb3b09617.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H> | `c1cd93de4cd1bfbd07672df7f8c85bc743b0c13ce3ea37ac4cc705e483720baa` | `73188` |
+
+The current build preserves the earlier client behavior:
+
+- module `35104` installs a Firestore SDK snapshot listener for
+  `events/{eventId}/cohostRequests`, decodes each existing document with
+  module `17959`, sorts the projection by `createdAt` ascending, and exposes
+  `eventId`, `targetUserId`, `createdByUserId`, and the decoded document
+  fields, including `status`;
+- module `61713` installs a Firestore SDK snapshot listener for
+  `events/{eventId}/private/cohostSecret`, decodes an existing document, and
+  projects a missing document as `undefined`;
+- module `70820` derives host membership from the loaded event and current
+  user; and
+- module `73188` starts both listeners only when that client-side host check
+  succeeds. A non-host receives empty request state and no secret in this
+  provider.
+
+This is not an accepted portable recovery-state read. The public assets expose
+SDK calls, not an exact portable wire request or response envelope. They do
+not publish the backend authorization rule or its denial behavior. The
+client-side host condition cannot prove that backend boundary. The provider
+also has no separate cohost-membership read; it derives membership from the
+already-loaded event `ownerIds`.
+
+Therefore `OP11-COHOST-STATE-READ` is **unsupported** by the bounded,
+credential-free evidence set. The exact missing proof is a reviewed transport
+request and response for the request collection and optional secret document,
+together with the backend authorization and denial contract for both reads.
+Until that proof exists, recovery logic must not claim verified invitation,
+membership, or link state, and cohost mutations must remain non-retryable and
+fail closed when recovery would require such a claim.
