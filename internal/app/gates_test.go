@@ -63,7 +63,11 @@ func TestDefaultGateManifestIsCompleteAndExplicit(t *testing.T) {
 
 	wantStates := map[string]GateState{
 		"OP11-EVENT-LIST-REQUEST":                  GateOpenOperation,
+		"OP11-AUTH-REQUESTS:sendAuthCodeTrusted":   GateClosed,
+		"OP11-AUTH-REQUESTS:getLoginToken":         GateClosed,
+		"OP11-AUTH-REQUESTS:signInWithCustomToken": GateClosed,
 		"OP11-AUTH-REQUESTS:refreshToken":          GateOpenPath,
+		"OP11-AUTH-REQUESTS:lookupFirebaseUser":    GateOpenPath,
 		"OP11-ENDPOINT-ERRORS:getGuests":           GateOpenClaim,
 		"OP11-MUTATION-OUTCOME:createEvent":        GateOpenClaim,
 		"OP11-CURRENT-GUEST-VARIANT":               GateOpenClaim,

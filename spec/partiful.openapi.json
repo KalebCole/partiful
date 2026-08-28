@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Partiful remote API contract",
-    "version": "2026-08-28.1",
+    "version": "2026-08-28.2",
     "description": "Curated remote transport manuscript. Evidence classifications and uncertainty are recorded in evidence/ledger.json."
   },
   "servers": [
@@ -1864,8 +1864,7 @@
                   "data": {
                     "type": "object",
                     "required": [
-                      "params",
-                      "amplitudeDeviceId"
+                      "params"
                     ],
                     "properties": {
                       "params": {
@@ -1873,10 +1872,7 @@
                         "required": [
                           "displayName",
                           "phoneNumber",
-                          "silent",
-                          "channelPreference",
-                          "captchaToken",
-                          "useAppleBusinessUpdates"
+                          "silent"
                         ],
                         "properties": {
                           "displayName": {
@@ -1891,20 +1887,18 @@
                           "channelPreference": {
                             "type": "string",
                             "enum": [
-                              "sms"
+                              "SMS",
+                              "WHATSAPP"
                             ]
                           },
                           "captchaToken": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "useAppleBusinessUpdates": {
-                            "type": "boolean"
+                            "type": "string"
                           }
                         },
                         "additionalProperties": false
+                      },
+                      "userId": {
+                        "type": "string"
                       },
                       "amplitudeDeviceId": {
                         "type": "string"
@@ -1912,6 +1906,10 @@
                       "amplitudeSessionId": {
                         "type": "integer",
                         "format": "int64"
+                      },
+                      "adminAccessRequested": {
+                        "type": "boolean",
+                        "const": true
                       }
                     },
                     "additionalProperties": false
@@ -1948,8 +1946,7 @@
                   "data": {
                     "type": "object",
                     "required": [
-                      "params",
-                      "amplitudeDeviceId"
+                      "params"
                     ],
                     "properties": {
                       "params": {
@@ -1957,7 +1954,6 @@
                         "required": [
                           "phoneNumber",
                           "authCode",
-                          "affiliateId",
                           "utms"
                         ],
                         "properties": {
@@ -1968,10 +1964,7 @@
                             "type": "string"
                           },
                           "affiliateId": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": "string"
                           },
                           "utms": {
                             "type": "object",
@@ -1980,12 +1973,19 @@
                         },
                         "additionalProperties": false
                       },
+                      "userId": {
+                        "type": "string"
+                      },
                       "amplitudeDeviceId": {
                         "type": "string"
                       },
                       "amplitudeSessionId": {
                         "type": "integer",
                         "format": "int64"
+                      },
+                      "adminAccessRequested": {
+                        "type": "boolean",
+                        "const": true
                       }
                     },
                     "additionalProperties": false
@@ -2041,7 +2041,8 @@
                     "type": "string"
                   },
                   "returnSecureToken": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "const": true
                   }
                 },
                 "additionalProperties": false

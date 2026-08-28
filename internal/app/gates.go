@@ -103,8 +103,17 @@ func DefaultGateManifest() (GateManifest, error) {
 		gate("OP15-EVENT-DETAIL-PROJECTION:links", GateOpenOperation),
 		gate("COLLECTION-GUEST-PAGE-21", GateOpenPath),
 	}
-	for _, operation := range []string{"sendAuthCodeTrusted", "getLoginToken", "signInWithCustomToken", "refreshToken", "lookupFirebaseUser"} {
-		entries = append(entries, gate("OP11-AUTH-REQUESTS:"+operation, GateOpenPath))
+	for _, requestGate := range []struct {
+		operation string
+		state     GateState
+	}{
+		{"sendAuthCodeTrusted", GateClosed},
+		{"getLoginToken", GateClosed},
+		{"signInWithCustomToken", GateClosed},
+		{"refreshToken", GateOpenPath},
+		{"lookupFirebaseUser", GateOpenPath},
+	} {
+		entries = append(entries, gate("OP11-AUTH-REQUESTS:"+requestGate.operation, requestGate.state))
 	}
 	for _, operation := range openAPIOperations {
 		entries = append(entries, gate("OP11-ENDPOINT-ERRORS:"+operation, GateOpenClaim))
