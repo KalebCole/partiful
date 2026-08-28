@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 
@@ -16,6 +16,9 @@ _RUN_ID = re.compile(r"^[0-9a-f]{32}$")
 _DIGEST = re.compile(r"^[0-9a-f]{64}$")
 _OPERATION = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
 _PUBLIC_OPERATION = re.compile(r"^[a-z][a-z0-9-]*\.[a-z][a-z0-9.-]*$")
+_OBSERVER_ASSERTION_NAMES = frozenset(
+    {"mutation_observed", "restored", "deleted"}
+)
 
 READ_OPERATION_IDS = frozenset(
     {
@@ -159,9 +162,10 @@ class ObserverAssertion:
     def __post_init__(self) -> None:
         if self.phase not in {"before", "after", "terminal"}:
             raise VerificationError("observer assertion phase is invalid")
-        require_safe_alias(self.name)
-        if not isinstance(self.expected, (bool, int, str, type(None))):
-            raise VerificationError("observer assertion must use a scalar expected value")
+        if self.name not in _OBSERVER_ASSERTION_NAMES:
+            raise VerificationError("observer assertion name is not allowlisted")
+        if not isinstance(self.expected, (bool, type(None))):
+            raise VerificationError("observer assertion expected value must be boolean or null")
 
 
 @dataclass(frozen=True)
@@ -176,6 +180,8 @@ class RetentionPlan:
         require_safe_alias(self.terminal_state)
         if self.retain_until.tzinfo is None:
             raise VerificationError("retention deadline must be timezone-aware")
+        if self.retain_until <= datetime.now(timezone.utc):
+            raise VerificationError("retention deadline is stale")
         if not self.review_url.startswith(
             "https://github.com/KalebCole/partiful/issues/"
         ):

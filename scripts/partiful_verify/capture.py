@@ -33,8 +33,9 @@ _SENSITIVE_KEYS = (
 
 def _safe_structural_key(value: Any) -> bool:
     key = str(value)
+    normalized = re.sub(r"[^a-z0-9]", "", key.lower())
     return bool(_STRUCTURAL_KEY.fullmatch(key)) and not any(
-        marker in key.lower() for marker in _SENSITIVE_KEYS
+        marker in key.lower() or marker in normalized for marker in _SENSITIVE_KEYS
     )
 
 
@@ -90,16 +91,20 @@ def capture_and_dispose(
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(root, 0o700)
     path = root / f"{run_id}-{capture_index}.raw.json"
+    try:
+        raw = json.dumps(
+            {"request": exchange.request, "response": exchange.response},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    except (TypeError, ValueError) as error:
+        raise VerificationError("raw capture serialization failed") from error
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     try:
         descriptor = os.open(path, flags, 0o600)
     except FileExistsError as error:
         raise VerificationError("raw capture path already exists") from error
-    raw = json.dumps(
-        {"request": exchange.request, "response": exchange.response},
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
+
     deleted = False
     try:
         with os.fdopen(descriptor, "wb") as stream:

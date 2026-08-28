@@ -7,6 +7,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 from scripts.partiful_verify import (
     ApprovalUseRegistry,
@@ -27,6 +28,15 @@ from scripts.partiful_verify import (
 
 NOW = datetime(2026, 8, 28, 12, 0, tzinfo=timezone.utc)
 FIXTURE_KEY = b"fixture-only-signing-key"
+FIXTURE_EXECUTABLE_GATES = {
+    "OP18-READ-WRAPPER": True,
+    "OP18-RAW-CAPTURE-DISPOSAL": True,
+    "OP18-MUTATION-WRAPPER": True,
+    "OP18-ACCOUNT-ROSTER": True,
+    "OP18-CLEANUP:createEvent": True,
+    "OP18-CLEANUP:addInvitedGuestsAsHost": True,
+    "OP18-RECIPIENT-OBSERVATION:addInvitedGuestsAsHost": True,
+}
 
 
 def read_manifest() -> ScopedReadManifest:
@@ -113,6 +123,16 @@ def success_exchange(operation_id: str) -> CapturedExchange:
 
 
 class ScopedReadManifestTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.executable_manifest = patch(
+            "scripts.partiful_verify.wrappers.EXECUTABLE_GATE_MANIFEST",
+            FIXTURE_EXECUTABLE_GATES,
+        )
+        self.executable_manifest.start()
+
+    def tearDown(self) -> None:
+        self.executable_manifest.stop()
+
     def test_read_manifest_rejects_mutation_operations(self) -> None:
         with self.assertRaisesRegex(VerificationError, "read-only operation"):
             ScopedReadManifest(
@@ -176,12 +196,16 @@ class ScopedReadManifestTests(unittest.TestCase):
                 AuditStore(Path(tmp) / "blocked-audit"),
                 Path(tmp) / "blocked-raw",
             )
-            with self.assertRaisesRegex(VerificationError, "OP18-READ-WRAPPER"):
-                blocked.run(
-                    "getEventInfo",
-                    "fixture-event",
-                    lambda: calls.append("called") or success_exchange("getEventInfo"),
-                )
+            with patch(
+                "scripts.partiful_verify.wrappers.EXECUTABLE_GATE_MANIFEST",
+                {"OP18-READ-WRAPPER": False},
+            ):
+                with self.assertRaisesRegex(VerificationError, "OP18-READ-WRAPPER"):
+                    blocked.run(
+                        "getEventInfo",
+                        "fixture-event",
+                        lambda: calls.append("called") or success_exchange("getEventInfo"),
+                    )
             self.assertEqual([], calls)
 
     def test_read_wrapper_redacts_before_immutable_audit_and_proves_disposal(self) -> None:
@@ -219,6 +243,16 @@ class ScopedReadManifestTests(unittest.TestCase):
 
 
 class MutationWrapperTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.executable_manifest = patch(
+            "scripts.partiful_verify.wrappers.EXECUTABLE_GATE_MANIFEST",
+            FIXTURE_EXECUTABLE_GATES,
+        )
+        self.executable_manifest.start()
+
+    def tearDown(self) -> None:
+        self.executable_manifest.stop()
+
     def _wrapper(
         self,
         root: Path,
@@ -289,13 +323,16 @@ class MutationWrapperTests(unittest.TestCase):
             with self.subTest(gate=missing), tempfile.TemporaryDirectory() as tmp:
                 calls: list[str] = []
                 gates = {gate: gate != missing for gate in expected}
-                with self.assertRaisesRegex(VerificationError, missing):
-                    self._wrapper(Path(tmp), approval, gates).run(
-                        "b" * 64,
-                        lambda: True,
-                        lambda step: calls.append(step.operation_id) or success_exchange(step.operation_id),
-                        lambda: lambda phase: {"mutation_observed": True, "restored": True},
-                    )
+                with patch(
+                    "scripts.partiful_verify.wrappers.EXECUTABLE_GATE_MANIFEST", gates
+                ):
+                    with self.assertRaisesRegex(VerificationError, missing):
+                        self._wrapper(Path(tmp), approval, gates).run(
+                            "b" * 64,
+                            lambda: True,
+                            lambda step: calls.append(step.operation_id) or success_exchange(step.operation_id),
+                            lambda: lambda phase: {"mutation_observed": True, "restored": True},
+                        )
                 self.assertEqual([], calls, index)
 
     def test_preflight_stop_causes_zero_dispatch(self) -> None:
@@ -530,6 +567,57 @@ class MutationWrapperTests(unittest.TestCase):
             self.assertEqual("approved-retained", bundle.terminal_status)
             payload = json.loads(bundle.path.read_text(encoding="utf-8"))
             self.assertEqual("fixture-owner", payload["retention"]["owner_alias"])
+
+
+class ReviewRegressionTests(unittest.TestCase):
+    def test_observer_assertions_reject_private_strings_and_raw_identifier_keys(self) -> None:
+        from scripts.partiful_verify.capture import structural_capture
+
+        with self.assertRaisesRegex(VerificationError, "observer assertion"):
+            ObserverAssertion("after", "mutation_observed", "private-expected")
+        with self.assertRaisesRegex(VerificationError, "observer assertion"):
+            ObserverAssertion("after", "raw-identifier", True)
+        self.assertEqual({}, structural_capture({"raw-identifier": "private-value"}))
+
+    def test_capture_disposes_raw_file_when_serialization_fails(self) -> None:
+        from scripts.partiful_verify.capture import capture_and_dispose
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "raw"
+            exchange = success_exchange("getEventInfo")
+            with patch(
+                "scripts.partiful_verify.capture.json.dumps",
+                side_effect=ValueError("fixture serialization failure"),
+            ):
+                with self.assertRaises(VerificationError):
+                    capture_and_dispose(root, "0" * 32, 1, exchange)
+            self.assertEqual([], list(root.iterdir()))
+
+    def test_retention_plan_rejects_a_past_deadline(self) -> None:
+        with self.assertRaisesRegex(VerificationError, "retention deadline is stale"):
+            RetentionPlan(
+                owner_alias="fixture-owner",
+                terminal_state="invitation-recorded",
+                retain_until=datetime.now(timezone.utc) - timedelta(seconds=1),
+                review_url="https://github.com/KalebCole/partiful/issues/43",
+            )
+
+    def test_forged_caller_gate_mapping_cannot_authorize_dispatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            calls: list[str] = []
+            wrapper = ReadWrapper(
+                read_manifest(),
+                {"OP18-READ-WRAPPER": True, "OP18-RAW-CAPTURE-DISPOSAL": True},
+                AuditStore(Path(tmp) / "audit"),
+                Path(tmp) / "raw",
+            )
+            with self.assertRaisesRegex(VerificationError, "OP18-READ-WRAPPER"):
+                wrapper.run(
+                    "getEventInfo",
+                    "fixture-event",
+                    lambda: calls.append("called") or success_exchange("getEventInfo"),
+                )
+            self.assertEqual([], calls)
 
 
 if __name__ == "__main__":

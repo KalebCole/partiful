@@ -9,6 +9,7 @@ import time
 from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Callable
 
 from .audit import AuditBundle, AuditStore
@@ -20,6 +21,16 @@ from .models import (
     VerificationError,
     required_gates,
 )
+
+
+# The executable evidence manifest is the only authorization source. It has
+# no OP18 entries until evidence declares them, so all wrapper calls stop.
+EXECUTABLE_GATE_MANIFEST = MappingProxyType({})
+
+
+def _require_executable_gate(gate: str) -> None:
+    if EXECUTABLE_GATE_MANIFEST.get(gate) is not True:
+        raise VerificationError("unmet gate " + gate)
 
 
 def _approval_bytes(approval: MutationApproval) -> bytes:
@@ -100,8 +111,7 @@ class ReadWrapper:
         ):
             raise VerificationError("read is outside manifest scope")
         for gate in ("OP18-READ-WRAPPER", "OP18-RAW-CAPTURE-DISPOSAL"):
-            if self.gate_states.get(gate) is not True:
-                raise VerificationError("unmet gate " + gate)
+            _require_executable_gate(gate)
         started = time.monotonic_ns()
         exchange = read()
         elapsed = time.monotonic_ns() - started
@@ -190,8 +200,7 @@ class MutationWrapper:
         ):
             raise VerificationError("rendered operation differs from approval")
         for gate in required_gates(approval):
-            if self.gate_states.get(gate) is not True:
-                raise VerificationError("unmet gate " + gate)
+            _require_executable_gate(gate)
         self.use_registry.claim(approval.run_id, approval.signature)
         if preflight() is not True:
             raise VerificationError("preflight stop condition failed")
