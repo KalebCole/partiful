@@ -14,11 +14,38 @@ import sys
 import tempfile
 import threading
 import time
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[1]
+SHUTDOWN_BOUND_SECONDS = 5.0
+EXPECTED_MCP_TOOLS = (
+    "auth_status",
+    "auth_logout",
+    "events_list",
+    "events_get",
+    "events_create",
+    "events_update",
+    "events_cancel",
+    "guests_list",
+    "guests_invite",
+    "rsvp_get",
+    "rsvp_set",
+    "contacts_list",
+    "cohosts_invite",
+    "cohosts_revoke_invite",
+    "cohosts_remove",
+    "cohosts_link_create",
+    "cohosts_link_revoke",
+    "blasts_send",
+    "posters_list",
+    "posters_search",
+    "schema",
+    "doctor",
+    "version",
+)
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> NoReturn:
     raise AssertionError(message)
 
 
@@ -50,6 +77,20 @@ def read_response(process: subprocess.Popen[str], method: str, timeout: float = 
     return response
 
 
+def read_remaining_protocol_frames(process: subprocess.Popen[str], context: str) -> list[dict]:
+    assert process.stdout is not None
+    frames = []
+    for line in process.stdout:
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError as error:
+            fail(f"MCP stdout contained non-protocol data during {context}: {line!r} ({error})")
+        if frame.get("jsonrpc") != "2.0":
+            fail(f"MCP stdout contained a non-protocol frame during {context}: {frame!r}")
+        frames.append(frame)
+    return frames
+
+
 def request(process: subprocess.Popen[str], identifier: int, method: str, params: dict | None = None) -> dict:
     frame = {"jsonrpc": "2.0", "id": identifier, "method": method}
     if params is not None:
@@ -62,9 +103,11 @@ def request(process: subprocess.Popen[str], identifier: int, method: str, params
 
 
 def launch(binary: Path, env: dict[str, str]) -> subprocess.Popen[str]:
+    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
     return subprocess.Popen(
         [str(binary)], cwd=ROOT, env=env, text=True,
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        creationflags=creationflags,
     )
 
 
@@ -74,9 +117,13 @@ class BlockingProxy:
     def __init__(self) -> None:
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind(("127.0.0.1", 0))
-        self.listener.listen(1)
+        self.listener.listen()
+        self.listener.settimeout(0.1)
         self.accepted = threading.Event()
         self.stop = threading.Event()
+        self.connections: list[socket.socket] = []
+        self.connection_threads: list[threading.Thread] = []
+        self.lock = threading.Lock()
         self.thread = threading.Thread(target=self._serve, daemon=True)
 
     @property
@@ -90,14 +137,30 @@ class BlockingProxy:
     def __exit__(self, *_: object) -> None:
         self.stop.set()
         self.listener.close()
+        with self.lock:
+            connections = list(self.connections)
+        for connection in connections:
+            connection.close()
         self.thread.join(timeout=1)
+        for thread in self.connection_threads:
+            thread.join(timeout=1)
 
     def _serve(self) -> None:
-        try:
-            connection, _ = self.listener.accept()
-        except OSError:
-            return
-        self.accepted.set()
+        while not self.stop.is_set():
+            try:
+                connection, _ = self.listener.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                return
+            with self.lock:
+                self.connections.append(connection)
+            self.accepted.set()
+            thread = threading.Thread(target=self._hold, args=(connection,), daemon=True)
+            self.connection_threads.append(thread)
+            thread.start()
+
+    def _hold(self, connection: socket.socket) -> None:
         connection.settimeout(0.1)
         with connection:
             while not self.stop.is_set():
@@ -113,18 +176,102 @@ class BlockingProxy:
         if not self.accepted.wait(timeout):
             fail(f"MCP request did not reach the local blocking proxy within {timeout} seconds")
 
+    def connection_count(self) -> int:
+        with self.lock:
+            return len(self.connections)
+
+
+def assert_tool_error(response: dict, error_type: str, code: str, context: str) -> None:
+    result = response.get("result", {})
+    error = result.get("structuredContent", {}).get("error", {})
+    if not result.get("isError") or error.get("type") != error_type or error.get("code") != code:
+        fail(f"{context} returned an unexpected tool error: {response!r}")
+
+
+def install_fake_credential(env: dict[str, str]) -> None:
+    if os.name == "nt":
+        root = Path(env["LOCALAPPDATA"]) / "Partiful"
+    elif sys.platform == "darwin":
+        root = Path(env["HOME"]) / "Library" / "Application Support" / "partiful"
+    else:
+        root = Path(env["XDG_DATA_HOME"]) / "partiful"
+    credential_dir = root / "credentials"
+    credential_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
+    credential = credential_dir / "slot-a.json"
+    credential.write_text(json.dumps({
+        "schema_version": 1,
+        "generation": 1,
+        "account_identity": "local-fixture-account",
+        "access_token": "local-fixture-access",
+        "refresh_token": "local-fixture-refresh",
+        "installation_secret": "local-fixture-installation",
+    }), encoding="utf-8")
+    credential.chmod(0o600)
+
+
+def shutdown_signals() -> list[tuple[str, signal.Signals | int]]:
+    if os.name == "nt":
+        return [("CTRL_BREAK_EVENT", signal.CTRL_BREAK_EVENT)]
+    return [("SIGINT", signal.SIGINT), ("SIGTERM", signal.SIGTERM)]
+
+
+def verify_signal_shutdown(binary: Path, env: dict[str, str], name: str, shutdown_signal: signal.Signals | int) -> None:
+    with BlockingProxy() as proxy:
+        signal_env = env.copy()
+        signal_env["HTTPS_PROXY"] = proxy.url
+        signal_env["https_proxy"] = proxy.url
+        signal_env["NO_PROXY"] = ""
+        signal_env["no_proxy"] = ""
+        process = launch(binary, signal_env)
+        initialized = request(process, 100, "initialize", {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "shutdown-smoke", "version": "1"},
+        })
+        if initialized.get("result", {}).get("serverInfo", {}).get("name") != "partiful":
+            fail(f"MCP server was not ready before {name}: {initialized!r}")
+        write_frame(process, {
+            "jsonrpc": "2.0",
+            "id": 101,
+            "method": "tools/call",
+            "params": {
+                "name": "events_cancel",
+                "arguments": {"event_id": "event_local_fixture", "notify_guests": False},
+            },
+        })
+        proxy.wait_for_request()
+        started = time.monotonic()
+        process.send_signal(shutdown_signal)
+        process.wait(timeout=SHUTDOWN_BOUND_SECONDS)
+        elapsed = time.monotonic() - started
+        if elapsed > SHUTDOWN_BOUND_SECONDS:
+            fail(f"{name} shutdown took {elapsed:.3f}s, bound is {SHUTDOWN_BOUND_SECONDS:.1f}s")
+        frames = read_remaining_protocol_frames(process, name)
+        stderr = process.stderr.read() if process.stderr is not None else ""
+        if process.returncode != 0 or stderr:
+            fail(f"{name} shutdown failed ({process.returncode}): stderr={stderr!r}")
+        if len(frames) != 1 or frames[0].get("id") != 101:
+            fail(f"{name} did not drain exactly the in-flight request: {frames!r}")
+        assert_tool_error(frames[0], "internal.failure", "REQUEST_CANCELLED", name)
+        if '"submitted":true' in json.dumps(frames[0], separators=(",", ":")):
+            fail(f"{name} reported mutation confirmation after cancellation: {frames[0]!r}")
+        if proxy.connection_count() != 1:
+            fail(f"{name} mutation dispatch count = {proxy.connection_count()}, want exactly 1")
+
 
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="partiful-smoke-") as temporary:
         temp = Path(temporary)
-        cli_binary = temp / "partiful"
-        mcp_binary = temp / "partiful-mcp"
+        executable_suffix = ".exe" if os.name == "nt" else ""
+        cli_binary = temp / f"partiful{executable_suffix}"
+        mcp_binary = temp / f"partiful-mcp{executable_suffix}"
         run(["go", "build", "-trimpath", "-o", str(cli_binary), "./cmd/partiful"])
         run(["go", "build", "-trimpath", "-o", str(mcp_binary), "./cmd/partiful-mcp"])
 
         env = os.environ.copy()
         env["HOME"] = str(temp / "home")
         env["XDG_DATA_HOME"] = str(temp / "data")
+        env["LOCALAPPDATA"] = str(temp / "data")
         # Prevent discovery of a host OS credential helper. The executables are
         # launched by absolute path and need no PATH entries.
         env["PATH"] = str(temp / "empty-path")
@@ -152,55 +299,49 @@ def main() -> int:
                 fail(f"MCP and CLI versions differ: {initialized!r} vs {fields!r}")
             listed = request(process, 2, "tools/list", {})
             tools = listed.get("result", {}).get("tools", [])
-            if len(tools) != 23:
-                fail(f"tool count = {len(tools)}, want 23")
-            names = {tool["name"] for tool in tools}
+            names = tuple(tool.get("name") for tool in tools)
+            if names != EXPECTED_MCP_TOOLS:
+                fail(f"tool listing = {names!r}, want {EXPECTED_MCP_TOOLS!r}")
 
-            version_name = next((name for name in names if name.endswith("version")), None)
-            if version_name is None:
-                fail("version tool is missing")
-            public_result = request(process, 3, "tools/call", {"name": version_name, "arguments": {}})
+            public_result = request(process, 3, "tools/call", {"name": "version", "arguments": {}})
             if public_result.get("result", {}).get("isError"):
                 fail(f"credentialless version tool failed: {public_result!r}")
 
-            protected_name = next((name for name in names if "cancel" in name and "event" in name), None)
-            if protected_name is None:
-                fail("protected event cancellation tool is missing")
-            protected = request(process, 4, "tools/call", {"name": protected_name, "arguments": {"event_id": "event_test"}})
-            encoded = json.dumps(protected, separators=(",", ":"))
-            if not protected.get("result", {}).get("isError") or "auth.required" not in encoded:
-                fail(f"protected tool did not return auth.required: {protected!r}")
+            protected = request(process, 4, "tools/call", {"name": "events_cancel", "arguments": {"event_id": "event_test"}})
+            assert_tool_error(protected, "auth.required", "AUTH_REQUIRED", "protected tool")
 
             write_frame(process, {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "posters_list", "arguments": {}}})
             proxy.wait_for_request()
             write_frame(process, {"jsonrpc": "2.0", "method": "notifications/cancelled", "params": {"requestId": 5, "reason": "smoke"}})
             cancelled = read_response(process, "notifications/cancelled")
-            cancelled_encoded = json.dumps(cancelled, separators=(",", ":"))
-            if cancelled.get("id") != 5 or not cancelled.get("result", {}).get("isError") or "REQUEST_CANCELLED" not in cancelled_encoded:
+            if cancelled.get("id") != 5:
                 fail(f"in-flight request was not cancelled: {cancelled!r}")
+            assert_tool_error(cancelled, "internal.failure", "REQUEST_CANCELLED", "in-flight request")
 
-            survived = request(process, 6, "tools/call", {"name": version_name, "arguments": {}})
+            survived = request(process, 6, "tools/call", {"name": "version", "arguments": {}})
             if survived.get("result", {}).get("isError"):
                 fail(f"MCP server did not survive cancellation: {survived!r}")
 
             assert process.stdin is not None
             process.stdin.close()
-            process.wait(timeout=5)
-            remaining_stdout = process.stdout.read() if process.stdout is not None else ""
+            process.wait(timeout=SHUTDOWN_BOUND_SECONDS)
+            remaining_frames = read_remaining_protocol_frames(process, "EOF shutdown")
             stderr = process.stderr.read() if process.stderr is not None else ""
-            if process.returncode != 0 or remaining_stdout or stderr:
-                fail(f"EOF shutdown or stdout purity failed ({process.returncode}): stdout={remaining_stdout!r} stderr={stderr!r}")
+            if process.returncode != 0 or remaining_frames or stderr:
+                fail(f"EOF shutdown or stdout purity failed ({process.returncode}): frames={remaining_frames!r} stderr={stderr!r}")
 
-        signaled = launch(mcp_binary, env)
-        time.sleep(0.1)
-        signaled.send_signal(signal.SIGTERM)
-        signaled.wait(timeout=5)
-        signal_stdout = signaled.stdout.read() if signaled.stdout is not None else ""
-        signal_stderr = signaled.stderr.read() if signaled.stderr is not None else ""
-        if signaled.returncode != 0 or signal_stdout or signal_stderr:
-            fail(f"signal shutdown or stdout purity failed ({signaled.returncode}): stdout={signal_stdout!r} stderr={signal_stderr!r}")
+        install_fake_credential(env)
+        verified_signals = []
+        for name, shutdown_signal in shutdown_signals():
+            verify_signal_shutdown(mcp_binary, env, name, shutdown_signal)
+            verified_signals.append(name)
 
-    print("binary smoke tests passed")
+    print(
+        "binary smoke tests passed: "
+        "protocol=2025-06-18 tools=23 public=version protected=auth.required "
+        "cancellation=REQUEST_CANCELLED eof=clean "
+        f"shutdown={','.join(verified_signals)}"
+    )
     return 0
 
 
