@@ -247,6 +247,19 @@ class PublicationGateTest(unittest.TestCase):
                             any(failure.startswith("invalid archive members") for failure in verify_release.verify_release_directory(output))
                         )
 
+    def test_release_verifier_requires_regular_members_and_an_exact_canonical_target_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for target in (build_release.TARGETS[0], build_release.TARGETS[-1]):
+                with self.subTest(target=target.name, case="symlink"):
+                    output = self._fixture_release(Path(temporary))
+                    self._replace_archive_members(output, target, build_release.archive_binary_names(target), member_type="symlink")
+                    self.assertTrue(any(failure.startswith("invalid archive members") for failure in verify_release.verify_release_directory(output)))
+            for case, change in (("cross-target-alias", self._alias_target_archive), ("duplicate-target", self._duplicate_target), ("unknown-target", self._add_unknown_target)):
+                with self.subTest(case=case):
+                    output = self._fixture_release(Path(temporary))
+                    change(output)
+                    self.assertTrue(any(failure.startswith("invalid target evidence") for failure in verify_release.verify_release_directory(output)))
+
     def test_release_workflow_checks_out_the_selected_tag_commit_before_verification(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         selection = workflow.index("- name: Select immutable release inputs")
@@ -269,7 +282,7 @@ class PublicationGateTest(unittest.TestCase):
         )
         return output
 
-    def _replace_archive_members(self, output: Path, target: build_release.Target, members: list[str]) -> None:
+    def _replace_archive_members(self, output: Path, target: build_release.Target, members: list[str], member_type: str = "file") -> None:
         manifest_path = output / "manifest.json"
         manifest = json.loads(manifest_path.read_text())
         item = next(item for item in manifest["targets"] if item["target"] == target.name)
@@ -279,20 +292,51 @@ class PublicationGateTest(unittest.TestCase):
                 for member in members:
                     payload = member.encode()
                     info = tarfile.TarInfo(member)
-                    info.size = len(payload)
-                    rewritten.addfile(info, io.BytesIO(payload))
+                    if member_type == "symlink":
+                        info.type = tarfile.SYMTYPE
+                        info.linkname = "elsewhere"
+                        rewritten.addfile(info)
+                    else:
+                        info.size = len(payload)
+                        rewritten.addfile(info, io.BytesIO(payload))
         else:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", UserWarning)
                 with zipfile.ZipFile(archive, "w") as rewritten:
                     for member in members:
-                        rewritten.writestr(member, member)
+                        info = zipfile.ZipInfo(member)
+                        if member_type == "symlink":
+                            info.create_system = 3
+                            info.external_attr = 0o120777 << 16
+                        rewritten.writestr(info, member)
         item["sha256"] = hashlib.sha256(archive.read_bytes()).hexdigest()
         manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
-        hashes = {
-            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in [archive, manifest_path, output / "sbom.spdx.json"]
-        }
+        self._refresh_checksums(output)
+
+    def _alias_target_archive(self, output: Path) -> None:
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["targets"][2]["archive"] = manifest["targets"][0]["archive"]
+        manifest["targets"][2]["sha256"] = manifest["targets"][0]["sha256"]
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+        self._refresh_checksums(output)
+
+    def _duplicate_target(self, output: Path) -> None:
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["targets"].append(manifest["targets"][0].copy())
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+        self._refresh_checksums(output)
+
+    def _add_unknown_target(self, output: Path) -> None:
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["targets"].append({"target": "unknown", "archive": "unknown.tar.gz", "binaries": [], "sha256": "0" * 64})
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+        self._refresh_checksums(output)
+
+    def _refresh_checksums(self, output: Path) -> None:
+        hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in output.iterdir() if path.is_file() and path.name != "checksums.txt"}
         (output / "checksums.txt").write_text("\n".join(
             f"{hashes.get(line.split('  ', 1)[1], line.split('  ', 1)[0])}  {line.split('  ', 1)[1]}"
             for line in (output / "checksums.txt").read_text().splitlines()

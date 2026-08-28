@@ -7,6 +7,7 @@ import datetime
 import hashlib
 import json
 import re
+import stat
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -100,10 +101,16 @@ def archive_member_failures(archive: Path, target: object, binaries: object) -> 
     try:
         if target_format == "tar.gz":
             with tarfile.open(archive, "r:gz") as package:
-                members = [member.name for member in package.getmembers()]
+                entries = package.getmembers()
+                if not all(member.isfile() for member in entries):
+                    return [f"invalid archive members: {target_name}"]
+                members = [member.name for member in entries]
         else:
             with zipfile.ZipFile(archive) as package:
-                members = [member.filename for member in package.infolist()]
+                entries = package.infolist()
+                if not all(stat.S_ISREG(entry.external_attr >> 16) for entry in entries):
+                    return [f"invalid archive members: {target_name}"]
+                members = [entry.filename for entry in entries]
     except (OSError, tarfile.TarError, zipfile.BadZipFile):
         return [f"invalid archive members: {target_name}"]
     if len(members) != len(expected) or set(members) != set(expected):
@@ -120,13 +127,25 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
     if expected_revision and manifest.get("source_revision") != expected_revision:
         failures.append("release revision mismatch")
     archives = manifest.get("targets", [])
-    by_target = {item.get("target"): item for item in archives if isinstance(item, dict)}
+    expected_targets = {target.name for target in TARGETS}
+    if not isinstance(archives, list) or any(not isinstance(item, dict) for item in archives):
+        failures.append("invalid target evidence: matrix")
+        archives = []
+    names = [item.get("target") for item in archives]
+    if len(names) != len(expected_targets) or set(names) != expected_targets:
+        failures.append("invalid target evidence: matrix")
+    by_target = {item.get("target"): item for item in archives}
     for target in TARGETS:
         item = by_target.get(target.name)
         if not item:
             failures.append(f"missing target evidence: {target.name}")
             continue
-        archive = directory / str(item.get("archive", ""))
+        extension = "tar.gz" if target.archive_format == "tar.gz" else "zip"
+        expected_archive = f"partiful_{manifest.get('version', '')}_{target.name}.{extension}"
+        if item.get("archive") != expected_archive:
+            failures.append(f"invalid target evidence: {target.name}")
+            continue
+        archive = directory / expected_archive
         if not archive.is_file() or item.get("sha256") != hashlib.sha256(archive.read_bytes()).hexdigest():
             failures.append(f"invalid archive evidence: {target.name}")
             continue
