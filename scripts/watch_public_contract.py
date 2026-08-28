@@ -61,6 +61,17 @@ def allowed_probe_ids(operation_ids: list[str]) -> list[str]:
     ]
 
 
+def expected_probe_kinds(operation_ids: list[str]) -> dict[str, str]:
+    return {
+        "DRIFT17-FIREBASE-PROBE": "firebase-public-configuration",
+        "DRIFT17-ASSET-DISCOVERY": "public-asset-discovery",
+        **{
+            f"DRIFT17-PROTECTED-CONTRACT:{operation_id}": "protected-contract"
+            for operation_id in operation_ids
+        },
+    }
+
+
 def _validate_enabled_probe(probe: dict[str, Any]) -> None:
     if set(probe) != _ENABLED_KEYS:
         raise RegistryError(f"enabled probe {probe.get('gate_id')} must contain only the reviewed fields")
@@ -102,7 +113,8 @@ def validate_probe_registry(registry: dict[str, Any], operation_ids: list[str]) 
     probes = registry.get("probes")
     if not isinstance(probes, list):
         raise RegistryError("probe registry probes must be a list")
-    expected_ids = allowed_probe_ids(operation_ids)
+    expected_kinds = expected_probe_kinds(operation_ids)
+    expected_ids = list(expected_kinds)
     actual_ids = [probe.get("gate_id") for probe in probes if isinstance(probe, dict)]
     missing = sorted(set(expected_ids) - set(actual_ids))
     unknown = sorted(set(actual_ids) - set(expected_ids), key=str)
@@ -110,8 +122,9 @@ def validate_probe_registry(registry: dict[str, Any], operation_ids: list[str]) 
     if missing or unknown or duplicates or len(probes) != len(expected_ids):
         raise RegistryError(f"probe inventory mismatch: missing={missing} unknown={unknown} duplicates={duplicates}")
     for probe in probes:
-        if probe.get("kind") not in _PROBE_KINDS:
-            raise RegistryError(f"probe {probe.get('gate_id')} has invalid kind")
+        gate_id = probe.get("gate_id")
+        if probe.get("kind") != expected_kinds[gate_id]:
+            raise RegistryError(f"probe {gate_id} kind does not match its gate identity")
         if probe.get("enabled") is False:
             if set(probe) != {"gate_id", "kind", "enabled"}:
                 raise RegistryError(f"disabled probe {probe.get('gate_id')} must not retain request details")

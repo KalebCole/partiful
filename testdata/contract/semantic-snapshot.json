@@ -157,59 +157,63 @@
     "executable": {
       "files": {
         "internal/app/auth_ops.go": {
-          "literal_count": 20,
-          "literal_sha256": "253f68dada3e85fb98eafb40b03e1ae9fccb1583492017f1296d3fc3698827fa"
+          "token_count": 356,
+          "token_sha256": "e6ecd29e4f98e324f83e2fc3b69134b28f15821168a77285f9f017a2034609fa"
         },
         "internal/app/blast_ops.go": {
-          "literal_count": 59,
-          "literal_sha256": "bbbb786f4ebfd58640fe38338a7f5fc3f48f280b9f1b0e9100a555461b680243"
+          "token_count": 1517,
+          "token_sha256": "dc85fc113fa39837295685ce6e8d937dda176402781cd840bb38b847d52f7f48"
+        },
+        "internal/app/errors.go": {
+          "token_count": 453,
+          "token_sha256": "f4381c52c6998c4e3cc452f622af7724f2297b6017bd53fe5971ce1e3882b84d"
         },
         "internal/app/event_ops.go": {
-          "literal_count": 86,
-          "literal_sha256": "e6d16c7c7ee221d5186732a0b9b7ad2c87a509bf71314191881c4773216ea228"
+          "token_count": 3634,
+          "token_sha256": "b990c32fcfbc291d08ffaaa35916cbeef8e81a4aa3778a39d4c50deccaf3ac0d"
         },
         "internal/app/invocation.go": {
-          "literal_count": 6,
-          "literal_sha256": "fb357b0820608cd160540541f71eda6e772c8dd4124d3194dc384fbc2fef2d84"
+          "token_count": 172,
+          "token_sha256": "09cb8936eda2420315fd860672634a662949fd4b914ca38154fe345a0b5e8685"
         },
         "internal/app/people_ops.go": {
-          "literal_count": 67,
-          "literal_sha256": "13dadd0d42d95821a37895f87e9a591d902eff484246e85e4d4fcd8e4e8106a9"
+          "token_count": 4006,
+          "token_sha256": "88b53f17dcf3b103a006730bafb014fb8a9225388a532828237241db1eeab1e6"
         },
         "internal/app/poster_ops.go": {
-          "literal_count": 11,
-          "literal_sha256": "5d4bda54a382f8ec3bb9e35b9d61195335a8f8330f34ea30a0b9477587067b28"
+          "token_count": 498,
+          "token_sha256": "ee4a0c727457c5b7d2b813eed66ed5f4f8686231393bf3a941859de1c057feaf"
         },
         "internal/app/project.go": {
-          "literal_count": 5,
-          "literal_sha256": "32c81f037e3416250d7873da33090e05a2e2e0f62b0646af323089e5d05c5d07"
+          "token_count": 358,
+          "token_sha256": "d8cc5c3fde8536f5e9d5a7252e61e9a690d3b46b85a29d906f7d5935d9e0b8c5"
         },
         "internal/app/utility_ops.go": {
-          "literal_count": 21,
-          "literal_sha256": "9d196697eb56058ecaf5eaeebb2c603c8bda151e97702626780006ba969dde1c"
+          "token_count": 592,
+          "token_sha256": "a0e24977b8e3c52de9a3ce47dbb629a27925380973f7b02202b686d77f93118a"
         },
         "internal/transport/callable/client.go": {
-          "literal_count": 298,
-          "literal_sha256": "344c93f4a5c31adcf2a7cea782ca28c30849d2a5280477b658c35cbdccb3d084"
+          "token_count": 4593,
+          "token_sha256": "eabc23a512d42f1a04f47796bfe80dc92b76f265ef90b0d972a933d47910015f"
         },
         "internal/transport/contracts.go": {
-          "literal_count": 6,
-          "literal_sha256": "60ec11926596f338220b4238d8db804cf1debfcf3ea6b45a895cb56ce5ba29f0"
+          "token_count": 916,
+          "token_sha256": "0a12c9803e469f3018bcf35a44f9d30906acb85be907c7d1a3f2a2ce69d2b439"
         },
         "internal/transport/firebaseauth/blocked.go": {
-          "literal_count": 2,
-          "literal_sha256": "52434005d08b985adeffe2d7094b76bdca27861960e4e7d4dafc7fb4090c310f"
+          "token_count": 199,
+          "token_sha256": "42939a1bb900171ceac6cdf4c3ccf47498e16b39010aedfcf6a5fe29d6b22ab8"
         },
         "internal/transport/firestore/client.go": {
-          "literal_count": 95,
-          "literal_sha256": "0d20904670796d7b9a7a543991170b695e72123fe857834525010efa74780fdf"
+          "token_count": 2544,
+          "token_sha256": "14bcd0f31209e8a50643d321805da71208157ce6698d2268f226a417ed7f1485"
         },
         "internal/transport/poster/client.go": {
-          "literal_count": 42,
-          "literal_sha256": "daa2869783af747ba453f6b323f7192063c628efdcfaf4840a180e7ea266a539"
+          "token_count": 930,
+          "token_sha256": "a7b23c92f5ec32765d2484f87dd7a4b8859864eba7a797699a4eb57f383ceb7c"
         }
       },
-      "format": 1
+      "format": 2
     },
     "openapi": {
       "components": {

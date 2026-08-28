@@ -161,72 +161,78 @@ def semantic_transport_snapshot(spec: dict[str, Any]) -> dict[str, Any]:
     return _semantic_value(selected)
 
 
-def _go_string_literals(source: str) -> list[str]:
-    """Extract Go interpreted/raw string literals while ignoring comments."""
-    values: list[str] = []
+_GO_OPERATORS = tuple(sorted({
+    "<<=", ">>=", "&^=", "...", "==", "!=", "<=", ">=", ":=", "++", "--",
+    "&&", "||", "<-", "<<", ">>", "&^", "+=", "-=", "*=", "/=", "%=", "&=",
+    "|=", "^=",
+}, key=len, reverse=True))
+
+
+def _go_semantic_tokens(source: str) -> list[str]:
+    """Tokenize executable Go source while ignoring comments and formatting."""
+    tokens: list[str] = []
     index = 0
     while index < len(source):
-        if source.startswith("//", index):
+        if source[index].isspace():
+            index += 1
+        elif source.startswith("//", index):
             newline = source.find("\n", index + 2)
             index = len(source) if newline < 0 else newline + 1
         elif source.startswith("/*", index):
             end = source.find("*/", index + 2)
-            index = len(source) if end < 0 else end + 2
-        elif source[index] == "`":
-            end = source.find("`", index + 1)
             if end < 0:
-                raise IntegrityError("unterminated Go raw string literal")
-            values.append(source[index + 1:end])
-            index = end + 1
-        elif source[index] == '"':
+                raise IntegrityError("unterminated Go block comment")
+            index = end + 2
+        elif source[index] in {'"', "'", "`"}:
+            delimiter = source[index]
             end = index + 1
             while end < len(source):
-                if source[end] == "\\":
+                if delimiter != "`" and source[end] == "\\":
                     end += 2
-                elif source[end] == '"':
+                elif source[end] == delimiter:
                     break
                 else:
                     end += 1
             if end >= len(source):
-                raise IntegrityError("unterminated Go interpreted string literal")
-            token = source[index:end + 1]
-            try:
-                values.append(json.loads(token))
-            except json.JSONDecodeError:
-                values.append(token[1:-1])
+                raise IntegrityError("unterminated Go literal")
+            tokens.append(source[index:end + 1])
             index = end + 1
-        elif source[index] == "'":
+        elif source[index].isalpha() or source[index] == "_":
             end = index + 1
-            while end < len(source):
-                if source[end] == "\\":
-                    end += 2
-                elif source[end] == "'":
-                    break
-                else:
-                    end += 1
-            index = min(end + 1, len(source))
+            while end < len(source) and (source[end].isalnum() or source[end] == "_"):
+                end += 1
+            tokens.append(source[index:end])
+            index = end
+        elif source[index].isdigit() or source[index] == "." and index + 1 < len(source) and source[index + 1].isdigit():
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "._"):
+                end += 1
+            tokens.append(source[index:end])
+            index = end
         else:
-            index += 1
-    return values
+            operator = next((value for value in _GO_OPERATORS if source.startswith(value, index)), source[index])
+            tokens.append(operator)
+            index += len(operator)
+    return tokens
 
 
 def executable_transport_snapshot(root: Path = ROOT) -> dict[str, Any]:
-    """Fingerprint transport semantics from production Go literals, not source formatting."""
+    """Fingerprint executable Go semantics without comments or source formatting."""
     candidates = list((root / "internal" / "transport").rglob("*.go"))
     app_root = root / "internal" / "app"
     if app_root.is_dir():
         candidates.extend(app_root.glob("*_ops.go"))
-        candidates.extend(app_root / name for name in ("invocation.go", "project.go") if (app_root / name).is_file())
+        candidates.extend(app_root / name for name in ("invocation.go", "project.go", "errors.go") if (app_root / name).is_file())
     files: dict[str, dict[str, Any]] = {}
     for path in sorted(set(candidates)):
         if path.name.endswith("_test.go"):
             continue
-        literals = sorted(_go_string_literals(path.read_text(encoding="utf-8")))
-        digest = hashlib.sha256(json.dumps(literals, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
-        files[path.relative_to(root).as_posix()] = {"literal_count": len(literals), "literal_sha256": digest}
+        tokens = _go_semantic_tokens(path.read_text(encoding="utf-8"))
+        digest = hashlib.sha256(json.dumps(tokens, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+        files[path.relative_to(root).as_posix()] = {"token_count": len(tokens), "token_sha256": digest}
     if not files:
         raise IntegrityError("no executable transport sources found")
-    return {"format": 1, "files": files}
+    return {"format": 2, "files": files}
 
 
 def classify_semantic_diff(before: dict[str, Any], after: dict[str, Any]) -> str:

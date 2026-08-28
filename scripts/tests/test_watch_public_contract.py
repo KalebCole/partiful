@@ -38,6 +38,42 @@ class DriftWatchTests(unittest.TestCase):
         self.assertEqual("inconclusive", reports[0]["classification"])
         self.assertEqual("invalid_probe_registry", reports[0]["reason"])
 
+    def test_gate_identity_kind_mismatch_sends_zero_requests(self) -> None:
+        mismatched_kinds = {
+            "DRIFT17-FIREBASE-PROBE": "public-asset-discovery",
+            "DRIFT17-ASSET-DISCOVERY": "firebase-public-configuration",
+            "DRIFT17-PROTECTED-CONTRACT:readThing": "firebase-public-configuration",
+        }
+        for gate_id, mismatched_kind in mismatched_kinds.items():
+            with self.subTest(gate_id=gate_id):
+                registry = disabled_registry()
+                probe = next(item for item in registry["probes"] if item["gate_id"] == gate_id)
+                probe["kind"] = mismatched_kind
+                probe.update({
+                    "enabled": True,
+                    "method": "GET",
+                    "target_host_class": "public-endpoint",
+                    "request_template_sha256": "a" * 64,
+                    "expected": {
+                        "statuses": [200], "codes": [], "configuration_rejection_codes": [],
+                        "shape_sha256": "b" * 64,
+                    },
+                    "limits": {
+                        "requests": 1, "request_bytes": 0, "response_bytes": 1024,
+                        "timeout_seconds": 2, "redirects": 0,
+                    },
+                })
+                calls = []
+
+                def requester(candidate: dict) -> dict:
+                    calls.append(candidate)
+                    return {}
+
+                reports = watch.run_probes(registry, OPERATIONS, requester)
+
+                self.assertEqual([], calls)
+                self.assertEqual("invalid_probe_registry", reports[0]["reason"])
+
     def test_disabled_probes_send_zero_requests_and_are_inconclusive(self) -> None:
         calls = []
         reports = watch.run_probes(disabled_registry(), OPERATIONS, lambda probe: calls.append(probe))

@@ -63,19 +63,47 @@ class ContractIntegrityTests(unittest.TestCase):
         spec["paths"]["/read"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["state"]["enum"].append("B")
         self.assertNotEqual(before, integrity.semantic_transport_snapshot(spec))
 
-    def test_executable_transport_snapshot_tracks_literals_not_formatting_or_comments(self) -> None:
+    def test_executable_transport_snapshot_tracks_behavior_not_formatting_or_comments(self) -> None:
         transport = self.root / "internal" / "transport" / "callable"
         app = self.root / "internal" / "app"
         transport.mkdir(parents=True)
         app.mkdir(parents=True)
         source = transport / "client.go"
-        source.write_text('package callable\n// old comment\nconst operation = "read"\ntype record struct { State string `json:"state"` }\n')
-        (app / "event_ops.go").write_text('package app\nconst protocolError = "contract.protocol_changed"\n')
+        source.write_text('package callable\n// old comment\nfunc invoke(t Transport) { t.Create() }\n')
+        (app / "event_ops.go").write_text('package app\nfunc create(t Transport) { t.Create() }\n')
         before = integrity.executable_transport_snapshot(self.root)
-        source.write_text('package callable\n\n// new comment\nconst operation = "read"\ntype record struct { State string `json:"state"` }\n')
+        source.write_text('package callable\n\n// new comment\nfunc invoke(t Transport) {\n\tt.Create()\n}\n')
         self.assertEqual(before, integrity.executable_transport_snapshot(self.root))
-        source.write_text('package callable\nconst operation = "readChanged"\ntype record struct { State string `json:"state"` }\n')
+        source.write_text('package callable\nfunc invoke(t Transport) { t.Cancel() }\n')
         self.assertNotEqual(before, integrity.executable_transport_snapshot(self.root))
+
+    def test_executable_transport_snapshot_covers_required_contract_classes(self) -> None:
+        transport = self.root / "internal" / "transport" / "callable"
+        app = self.root / "internal" / "app"
+        transport.mkdir(parents=True)
+        app.mkdir(parents=True)
+        sources = {
+            transport / "client.go": "package callable\nfunc request() { buildRequest() }\nfunc validate() bool { return accepted() }\n",
+            app / "event_ops.go": "package app\nfunc create(t Transport) { t.Create() }\n",
+            app / "project.go": "package app\nfunc project(v Value) Result { return projectEvent(v) }\n",
+            app / "errors.go": "package app\nfunc classify(err error) Error { return classifyKnown(err) }\n",
+        }
+        for path, source in sources.items():
+            path.write_text(source)
+        before = integrity.executable_transport_snapshot(self.root)
+        mutations = {
+            "request construction": (transport / "client.go", "buildRequest", "buildAlternateRequest"),
+            "strict validator": (transport / "client.go", "accepted", "rejected"),
+            "operation composition": (app / "event_ops.go", "Create", "Cancel"),
+            "projector": (app / "project.go", "projectEvent", "projectGuest"),
+            "error classifier": (app / "errors.go", "classifyKnown", "classifyUnknown"),
+        }
+        for contract_class, (path, old, new) in mutations.items():
+            with self.subTest(contract_class=contract_class):
+                original = sources[path]
+                path.write_text(original.replace(old, new))
+                self.assertNotEqual(before, integrity.executable_transport_snapshot(self.root))
+                path.write_text(original)
 
     def test_semantic_diff_classifies_evidence_transport_and_command_changes(self) -> None:
         base = {"transport": {"paths": {}}, "command": {"revision": "1"}, "evidence": {"digest": "a"}}
