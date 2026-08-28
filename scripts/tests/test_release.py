@@ -326,6 +326,31 @@ class PublicationGateTest(unittest.TestCase):
         self.assertIn("SIGINT", section)
         self.assertIn("SIGTERM", section)
 
+    def test_release_workflow_waits_for_initialized_mcp_before_signal_smoke_and_checks_the_full_public_surface(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        section = workflow[workflow.index("native-smoke:"):workflow.index("publish:")]
+        initialized = section.index('"initialize"')
+        sigint = section.index("SIGINT")
+        sigterm = section.index("SIGTERM")
+        self.assertLess(initialized, sigint)
+        self.assertLess(initialized, sigterm)
+        self.assertIn('"tools/list"', section)
+        self.assertIn("len(tools) != 23", section)
+        self.assertIn('serverInfo", {}).get("version") != fields["cli_version"]', section)
+        self.assertIn("stderr", section)
+
+    def test_release_verifier_requires_source_metadata_and_toolchain_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for key, failure in (("source_date_epoch", "invalid source metadata"), ("toolchain", "invalid toolchain metadata")):
+                with self.subTest(key=key):
+                    output = self._fixture_release(Path(temporary))
+                    manifest_path = output / "manifest.json"
+                    manifest = json.loads(manifest_path.read_text())
+                    del manifest[key]
+                    manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+                    self._refresh_checksums(output)
+                    self.assertIn(failure, verify_release.verify_release_directory(output))
+
     def _fixture_release(self, root: Path) -> Path:
         output = root / "release"
         build_release.build_release(

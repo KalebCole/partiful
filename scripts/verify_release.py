@@ -136,6 +136,12 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
     if expected_revision and manifest.get("source_revision") != expected_revision:
         failures.append("release revision mismatch")
     archives = manifest.get("targets", [])
+    epoch = manifest.get("source_date_epoch")
+    if not isinstance(epoch, int) or isinstance(epoch, bool) or epoch < 0:
+        failures.append("invalid source metadata")
+    toolchain = manifest.get("toolchain")
+    if not isinstance(toolchain, dict) or set(toolchain) != {"go", "build_flags"} or not all(isinstance(value, str) and value for value in toolchain.values()):
+        failures.append("invalid toolchain metadata")
     fields = manifest.get("release_fields")
     required_field_names = {"cli_version", "command_contract_revision", "transport_contract_revision"}
     if not isinstance(fields, dict) or set(fields) != required_field_names or fields.get("cli_version") != manifest.get("version") or not all(isinstance(value, str) and value for value in fields.values()):
