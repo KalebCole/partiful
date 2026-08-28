@@ -7,11 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-REQUIRED_PROFILES = (
-    "partiful-implementer",
-    "partiful-code-reviewer",
-    "partiful-evidence",
-)
+REQUIRED_PROFILES = ("coding-worker", "code-reviewer")
 ALLOWED_TOOLSETS = frozenset({"terminal", "file", "skills"})
 
 
