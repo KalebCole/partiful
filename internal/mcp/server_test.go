@@ -40,7 +40,10 @@ func TestServerInitializesAndDerivesExactToolInventory(t *testing.T) {
 			`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}` + "\n",
 	)
 	var stdout, stderr bytes.Buffer
-	server := mcp.NewServer(catalog, invokeFunc(unexpectedInvoke(t)), mcp.Options{Diagnostics: &stderr})
+	server := mcp.NewServer(catalog, invokeFunc(unexpectedInvoke(t)), mcp.Options{
+		Diagnostics:   &stderr,
+		ServerVersion: "1.2.3-test",
+	})
 
 	if err := server.Serve(context.Background(), input, &stdout); err != nil {
 		t.Fatalf("Serve() error = %v", err)
@@ -52,14 +55,15 @@ func TestServerInitializesAndDerivesExactToolInventory(t *testing.T) {
 	var initialized struct {
 		ProtocolVersion string `json:"protocolVersion"`
 		ServerInfo      struct {
-			Name string `json:"name"`
+			Name    string `json:"name"`
+			Version string `json:"version"`
 		} `json:"serverInfo"`
 		Capabilities struct {
 			Tools map[string]any `json:"tools"`
 		} `json:"capabilities"`
 	}
 	mustUnmarshal(t, responses[0].Result, &initialized)
-	if initialized.ProtocolVersion != mcp.ProtocolVersion || initialized.ServerInfo.Name != "partiful" || initialized.Capabilities.Tools == nil {
+	if initialized.ProtocolVersion != mcp.ProtocolVersion || initialized.ServerInfo.Name != "partiful" || initialized.ServerInfo.Version != "1.2.3-test" || initialized.Capabilities.Tools == nil {
 		t.Fatalf("initialize result = %#v", initialized)
 	}
 	var listed struct {

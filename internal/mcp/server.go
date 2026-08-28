@@ -27,15 +27,17 @@ type Invoker interface {
 }
 
 type Options struct {
-	Diagnostics  io.Writer
-	DrainTimeout time.Duration
+	Diagnostics   io.Writer
+	DrainTimeout  time.Duration
+	ServerVersion string
 }
 
 type Server struct {
-	catalog      command.Catalog
-	invoker      Invoker
-	diagnostics  io.Writer
-	drainTimeout time.Duration
+	catalog       command.Catalog
+	invoker       Invoker
+	diagnostics   io.Writer
+	drainTimeout  time.Duration
+	serverVersion string
 
 	writeMu sync.Mutex
 	callsMu sync.Mutex
@@ -105,9 +107,14 @@ func NewServer(catalog command.Catalog, invoker Invoker, options Options) *Serve
 	if drainTimeout <= 0 {
 		drainTimeout = defaultDrainTimeout
 	}
+	serverVersion := options.ServerVersion
+	if serverVersion == "" {
+		serverVersion = "devel"
+	}
 	return &Server{
 		catalog: catalog, invoker: invoker, diagnostics: diagnostics,
-		drainTimeout: drainTimeout, calls: make(map[string]context.CancelFunc),
+		drainTimeout: drainTimeout, serverVersion: serverVersion,
+		calls: make(map[string]context.CancelFunc),
 	}
 }
 
@@ -186,7 +193,7 @@ func (server *Server) handleFrame(ctx context.Context, output io.Writer, frame [
 		server.write(output, response{JSONRPC: "2.0", ID: request.ID, Result: map[string]any{
 			"protocolVersion": ProtocolVersion,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "partiful", "version": "devel"},
+			"serverInfo":      map[string]any{"name": "partiful", "version": server.serverVersion},
 		}})
 	case "notifications/initialized":
 		return
