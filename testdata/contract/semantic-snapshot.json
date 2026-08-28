@@ -150,7 +150,7 @@
   },
   "command_revision": "1",
   "evidence": {
-    "sha256": "c69fd6ab94de237e130a012920306a298dca6bf7d1c28881e9c267bbeaec86bf"
+    "sha256": "8d45457b97ef95fa8c6cfdf704a8bca7772be1da015884058ff8000c31921f1a"
   },
   "format": 1,
   "transport": {
@@ -2791,6 +2791,10 @@
                       "data": {
                         "additionalProperties": false,
                         "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
                           "amplitudeDeviceId": {
                             "type": "string"
                           },
@@ -2801,9 +2805,12 @@
                           "params": {
                             "additionalProperties": false,
                             "properties": {
+                              "currentAppVersion": {},
                               "eventId": {
                                 "type": "string"
-                              }
+                              },
+                              "password": {},
+                              "useCache": {}
                             },
                             "required": [
                               "eventId"
@@ -2819,7 +2826,7 @@
                         },
                         "required": [
                           "params",
-                          "amplitudeDeviceId"
+                          "userId"
                         ],
                         "type": "object"
                       }
@@ -4066,5 +4073,5 @@
       ]
     }
   },
-  "transport_revision": "2026-08-28.1"
+  "transport_revision": "2026-08-28.2"
 }
