@@ -1,0 +1,158 @@
+{
+  "assetCount": 10,
+  "candidateFingerprints": [
+    {
+      "apiKeySha256Prefix": "ce87f031153db8e6",
+      "projectIdSha256Prefix": "c913c1bf6db4a62b"
+    }
+  ],
+  "classification": "one",
+  "configurationFingerprintComparison": {
+    "comparison": "equal",
+    "newCandidateApiKeySha256Prefix": "ce87f031153db8e6",
+    "oldAcceptedApiKeySha256Prefix": "ce87f031153db8e6"
+  },
+  "disposition": "candidate-evidence-only-no-accepted-configuration-change",
+  "expectedProjectDiscriminator": {
+    "comparison": "exact projectId equality",
+    "matched": 1,
+    "repositorySource": "spec/partiful.openapi.json#/paths/~1v1~1projects~1getpartiful~1databases~1(default)~1documents~1events~1{eventId}/get",
+    "sha256Prefix": "c913c1bf6db4a62b"
+  },
+  "expectedProjectMatchCount": 1,
+  "extractedCandidateCount": 1,
+  "extractorVersion": "asset-discovery-v1",
+  "gateId": "DRIFT17-ASSET-DISCOVERY",
+  "limits": {
+    "allowedOrigin": "https://partiful.com",
+    "maxAssets": 32,
+    "maxRedirectsPerRequest": 3,
+    "maxResponseBytes": 4194304,
+    "maxTotalBytes": 33554432,
+    "methods": [
+      "GET"
+    ],
+    "seedUrls": [
+      "https://partiful.com/login"
+    ],
+    "wallClockSeconds": 60
+  },
+  "observedAtUTC": "2026-08-28T17:02:21Z",
+  "redaction": {
+    "cookiesRetained": false,
+    "headersRetained": false,
+    "queryStringsRetained": false,
+    "rawAssetsRetained": false,
+    "rawConfigurationRetained": false,
+    "responseBodiesRetained": false
+  },
+  "sourceCount": 11,
+  "sources": [
+    {
+      "bytes": 32147,
+      "contentType": "text/html",
+      "redirects": 0,
+      "role": "seed",
+      "sha256": "4d0adffa7351fb719fcf6bf61847a3055956cc0ad416eb5fcc11dff14219d9ec",
+      "url": "https://partiful.com/login"
+    },
+    {
+      "bytes": 112594,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+      "url": "https://partiful.com/_next/static/chunks/polyfills-42372ed130431b0a.js"
+    },
+    {
+      "bytes": 6933,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "d06b5ac0a6d11b03cc7580f40108a0c4fbc6ac8a21a5aae65a4e007ee0ce37e9",
+      "url": "https://partiful.com/_next/static/chunks/webpack-8cb114df504ed07c.js"
+    },
+    {
+      "bytes": 190342,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "2dec7bfe599ffd12900d3c481c15fc37061f17d313f5f39058b6ea478e824e91",
+      "url": "https://partiful.com/_next/static/chunks/framework-07754949f1355fde.js"
+    },
+    {
+      "bytes": 290975,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "8ba4182a3dec72a6f17d0dbe32590557fc125bbabe763bd1c717ecb960a27907",
+      "url": "https://partiful.com/_next/static/chunks/main-d9e692821d37fa56.js"
+    },
+    {
+      "bytes": 2371473,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "73b988c55401f68c265ac6b223b85ceae67f3be76efea2d56fd10333b7920bbf",
+      "url": "https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js"
+    },
+    {
+      "bytes": 8287,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "8031e98f68d1f81e9f1843ab268e1d5575a49f0a68a6827b9e821bd09d4e4098",
+      "url": "https://partiful.com/_next/static/chunks/9512-fcece14a3f9598b3.js"
+    },
+    {
+      "bytes": 9980,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "348c61036bfdd097591f37a40f08b1c48265fdf45a7b3dd7812e8cff88252883",
+      "url": "https://partiful.com/_next/static/chunks/9552-9fd3f6ad8118c783.js"
+    },
+    {
+      "bytes": 10778,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "03f897883e48ef8d8e89ef64a837dbf6577e261df6f4cc81ac0662a76f934fcb",
+      "url": "https://partiful.com/_next/static/chunks/pages/login-9dc5abc66d6b2582.js"
+    },
+    {
+      "bytes": 11750,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "7df0479beab97444f9619534ef2903e89a7a690601b758523b6550fa9713e2ff",
+      "url": "https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js"
+    },
+    {
+      "bytes": 125,
+      "contentType": "application/javascript",
+      "redirects": 0,
+      "role": "asset",
+      "sha256": "061accd61867c3d94d307c0b3d29759d7c514d68486d5c648a9784776ace76a3",
+      "url": "https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_ssgManifest.js"
+    }
+  ],
+  "syntheticClassificationVectors": [
+    {
+      "classification": "zero",
+      "matchingCandidates": 0,
+      "name": "zero"
+    },
+    {
+      "classification": "one",
+      "matchingCandidates": 1,
+      "name": "one"
+    },
+    {
+      "classification": "many",
+      "matchingCandidates": 2,
+      "name": "many"
+    }
+  ],
+  "totalBytes": 3045384
+}
