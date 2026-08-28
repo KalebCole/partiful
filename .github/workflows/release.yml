@@ -1,0 +1,75 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Existing v-prefixed tag to publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-verify-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Select immutable release inputs
+        id: release
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="${INPUT_VERSION:-${GITHUB_REF_NAME}}"
+          git rev-parse "${version}^{commit}" >/dev/null
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'revision=%s\n' "$(git rev-list -n 1 "$version")" >> "$GITHUB_OUTPUT"
+          printf 'epoch=%s\n' "$(git log -1 --format=%ct "$version")" >> "$GITHUB_OUTPUT"
+      - name: Verify contract integrity
+        run: python3 scripts/verify_contract_integrity.py
+      - name: Verify worker profiles
+        run: python3 scripts/verify_implementation_worker_profiles.py
+      - name: Run native MCP stdio smoke hook
+        run: python3 scripts/smoke_binaries.py
+      - name: Build normalized release archives
+        run: >-
+          python3 scripts/build_release.py
+          --output release
+          --version "${{ steps.release.outputs.version }}"
+          --source-date-epoch "${{ steps.release.outputs.epoch }}"
+          --source-revision "${{ steps.release.outputs.revision }}"
+          --verify-reproducible
+      - name: Verify publication gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/verify_release.py
+          --release-directory release
+          --expected-revision "${{ steps.release.outputs.revision }}"
+          --contract-integrity-passed
+          --worker-profiles-passed
+          --mcp-stdio-interop-gate "$(gh issue view 29 --repo KalebCole/partiful --json state --jq .state)"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${{ steps.release.outputs.version }}" release/*
+          --repo KalebCole/partiful
+          --target "${{ steps.release.outputs.revision }}"
+          --verify-tag
+          --title "${{ steps.release.outputs.version }}"
+          --generate-notes
