@@ -140,6 +140,64 @@ class PublicationGateTest(unittest.TestCase):
             checksum = hashlib.sha256((output / "checksums.txt").read_bytes()).hexdigest()
             self.assertRegex(checksum, r"^[0-9a-f]{64}$")
 
+    def test_release_verifier_rejects_a_checksum_manifest_missing_a_required_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            checksums = (output / "checksums.txt").read_text().splitlines()
+            (output / "checksums.txt").write_text(
+                "\n".join(line for line in checksums if "darwin-amd64" not in line) + "\n"
+            )
+            self.assertIn("checksum manifest artifact set mismatch", verify_release.verify_release_directory(output))
+
+    def test_release_verifier_rejects_duplicate_checksum_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            checksums = (output / "checksums.txt").read_text()
+            (output / "checksums.txt").write_text(checksums + checksums.splitlines()[0] + "\n")
+            self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
+
+    def test_release_verifier_rejects_malformed_checksum_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            (output / "checksums.txt").write_text("malformed\n")
+            self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
+
+    def test_release_verifier_rejects_unexpected_checksum_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            checksums = (output / "checksums.txt").read_text()
+            (output / "checksums.txt").write_text(checksums + ("0" * 64) + "  unexpected.txt\n")
+            self.assertIn("checksum manifest artifact set mismatch", verify_release.verify_release_directory(output))
+
+    def test_release_verifier_rejects_path_escaping_checksum_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = self._fixture_release(Path(temporary))
+            checksums = (output / "checksums.txt").read_text().replace("  manifest.json", "  ../manifest.json")
+            (output / "checksums.txt").write_text(checksums)
+            self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
+
+    def test_release_workflow_checks_out_the_selected_tag_commit_before_verification(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        selection = workflow.index("- name: Select immutable release inputs")
+        checkout = workflow.index("- name: Check out selected release commit")
+        verification = workflow.index("- name: Verify contract integrity")
+        self.assertLess(selection, checkout)
+        self.assertLess(checkout, verification)
+        self.assertIn("ref: ${{ steps.release.outputs.revision }}", workflow[checkout:verification])
+        self.assertIn('test "$(git rev-parse HEAD)" = "${{ steps.release.outputs.revision }}"', workflow[checkout:verification])
+
+    def _fixture_release(self, root: Path) -> Path:
+        output = root / "release"
+        build_release.build_release(
+            output=output,
+            version="v1.2.3",
+            source_date_epoch=1_700_000_000,
+            source_revision="e" * 40,
+            runner=build_release.fixture_runner,
+            smoke=lambda *_: None,
+        )
+        return output
+
 
 if __name__ == "__main__":
     unittest.main()

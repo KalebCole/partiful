@@ -39,6 +39,14 @@ jobs:
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
           printf 'revision=%s\n' "$(git rev-list -n 1 "$version")" >> "$GITHUB_OUTPUT"
           printf 'epoch=%s\n' "$(git log -1 --format=%ct "$version")" >> "$GITHUB_OUTPUT"
+      - name: Check out selected release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert selected release commit
+        run: test "$(git rev-parse HEAD)" = "${{ steps.release.outputs.revision }}"
       - name: Verify contract integrity
         run: python3 scripts/verify_contract_integrity.py
       - name: Verify worker profiles

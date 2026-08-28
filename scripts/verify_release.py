@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 import sys
@@ -61,8 +62,24 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
     if not checksum_path.is_file():
         failures.append("missing checksums.txt")
     else:
+        required_names = {
+            f"partiful_{manifest.get('version', '')}_{target.name}.{'tar.gz' if target.archive_format == 'tar.gz' else 'zip'}"
+            for target in TARGETS
+        } | {"manifest.json", "sbom.spdx.json"}
+        entries: dict[str, str] = {}
+        malformed = False
         for line in checksum_path.read_text().splitlines():
-            digest, _, name = line.partition("  ")
+            match = re.fullmatch(r"([0-9a-f]{64})  ([^/\\]+)", line)
+            if not match or match.group(2) in entries:
+                malformed = True
+                continue
+            digest, name = match.groups()
+            entries[name] = digest
+        if malformed:
+            failures.append("invalid checksum manifest")
+        if set(entries) != required_names:
+            failures.append("checksum manifest artifact set mismatch")
+        for name, digest in entries.items():
             artifact = directory / name
             if not artifact.is_file() or hashlib.sha256(artifact.read_bytes()).hexdigest() != digest:
                 failures.append(f"invalid checksum: {name}")
