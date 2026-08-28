@@ -102,9 +102,10 @@ class PumpAcceptanceTests(unittest.TestCase):
                 (d / ".env").write_text("")
             self.assertEqual(set(REQUIRED_PROFILES), set(verify_worker_profiles(root)))
 
-    def test_scheduler_is_quiet_deterministic_and_never_merges(self) -> None:
+    def test_scheduler_validates_contracts_then_runs_quiet_deterministic_pumps_and_never_merges(self) -> None:
         commands = build_commands(Path("/repo"))
-        self.assertEqual(3, len(commands))
+        self.assertEqual(4, len(commands))
+        self.assertTrue(commands[0][1].endswith("scripts/verify_implementation_contracts.py"))
         self.assertTrue(all("--quiet" in command for command in commands))
         self.assertTrue(all("deterministic_merge_gate.py" not in " ".join(command) for command in commands))
 

@@ -5,7 +5,8 @@ import argparse, os, subprocess, sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def build_commands(root:Path=ROOT)->list[list[str]]:
- return [[sys.executable,str(root/"scripts"/name),"--quiet"] for name in ("wayfinder_frontier_pump.py","implementation_frontier_pump.py","evidence_frontier_pump.py")]
+ names=("verify_implementation_contracts.py","wayfinder_frontier_pump.py","implementation_frontier_pump.py","evidence_frontier_pump.py")
+ return [[sys.executable,str(root/"scripts"/name),"--quiet"] for name in names]
 def main(argv:list[str]|None=None)->int:
  p=argparse.ArgumentParser(description=__doc__+" Merge is triggered only by same-card reviewer approval.");p.add_argument("--quiet",action="store_true");a=p.parse_args(argv)
  env={"PATH":os.environ.get("PATH","") ,"HOME":os.environ.get("HOME","")}
