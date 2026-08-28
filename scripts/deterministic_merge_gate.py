@@ -8,13 +8,13 @@ try: from scripts.select_implementation_wave import _overlap
 except ModuleNotFoundError: from select_implementation_wave import _overlap
 try: from scripts.checkout_verified_pr_head import checkout_verified_pr_head
 except ModuleNotFoundError: from checkout_verified_pr_head import checkout_verified_pr_head
-ROOT=Path(__file__).resolve().parents[1]; CATEGORIES=("specification","correctness","domain_model","test_quality","edge_cases","security_privacy","maintainability","domain_adherence","evidence_rigor")
+ROOT=Path(__file__).resolve().parents[1]; REVIEWER_PROFILE_NAME="code-reviewer"; CATEGORIES=("specification","correctness","domain_model","test_quality","edge_cases","security_privacy","maintainability","domain_adherence","evidence_rigor")
 def validate_gate(p:dict)->dict:
  f=[]
  def fail(c,d):f.append({"code":c,"detail":d})
  sha=lambda x:isinstance(x,str) and bool(re.fullmatch(r"[0-9a-f]{40}",x))
  if not sha(p.get("head")) or not sha(p.get("reviewed_sha")) or p.get("head")!=p.get("reviewed_sha"):fail("sha_mismatch","nonempty 40-char reviewed SHA must equal head")
- if p.get("reviewer_provenance") is not True:fail("invalid_reviewer_provenance","approval must come from the live native partiful-code-reviewer run")
+ if p.get("reviewer_provenance") is not True:fail("invalid_reviewer_provenance",f"approval must come from the live native {REVIEWER_PROFILE_NAME} run")
  r=p.get("latest_review") or {}
  if r.get("verdict")!="APPROVE" or r.get("sha")!=p.get("head"):fail("latest_review_not_approve","latest structured approval must name head")
  if set((r.get("categories") or {}))!=set(CATEGORIES) or any(v!="PASS" for v in (r.get("categories") or {}).values()):fail("incomplete_review_categories","nine category PASS verdicts required")
@@ -56,7 +56,7 @@ def verify_review_body(body:str,run_id:int,claim:str)->bool:
  expected=hmac.new(claim.encode(),tagged.encode(),hashlib.sha256).hexdigest()
  return bool(proof and re.search(rf"^Reviewer-Run:\s*{run_id}\s*$",tagged,re.M) and hmac.compare_digest(proof.group(1),expected))
 def _native_reviewer_binding(issue:int)->tuple[int,str]|None:
- if os.environ.get("HERMES_PROFILE")!="partiful-code-reviewer" or os.environ.get("HERMES_KANBAN_BOARD")!="partiful":return False
+ if os.environ.get("HERMES_PROFILE")!=REVIEWER_PROFILE_NAME or os.environ.get("HERMES_KANBAN_BOARD")!="partiful":return False
  db,task_id,run_id,claim=(os.environ.get(k,"") for k in ("HERMES_KANBAN_DB","HERMES_KANBAN_TASK","HERMES_KANBAN_RUN_ID","HERMES_KANBAN_CLAIM_LOCK"))
  if not db or not task_id or not run_id.isdigit() or not claim:return False
  try:
@@ -66,7 +66,7 @@ def _native_reviewer_binding(issue:int)->tuple[int,str]|None:
    run=conn.execute("SELECT task_id,profile,status,claim_lock FROM task_runs WHERE id=?",(int(run_id),)).fetchone()
   finally:conn.close()
  except (OSError,sqlite3.Error):return None
- return (int(run_id),claim) if task==("partiful-code-reviewer","running",int(run_id),f"partiful:implementation:{issue}",claim) and run==(task_id,"partiful-code-reviewer","running",claim) else None
+ return (int(run_id),claim) if task==(REVIEWER_PROFILE_NAME,"running",int(run_id),f"partiful:implementation:{issue}",claim) and run==(task_id,REVIEWER_PROFILE_NAME,"running",claim) else None
 def _native_reviewer_provenance(issue:int,body:str|None=None)->bool:
  binding=_native_reviewer_binding(issue)
  return bool(binding and (body is None or verify_review_body(body,*binding)))

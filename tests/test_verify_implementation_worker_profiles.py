@@ -11,6 +11,9 @@ from scripts.verify_implementation_worker_profiles import (
 
 
 class VerifyImplementationWorkerProfilesTests(unittest.TestCase):
+    def test_audits_only_generic_worker_profiles(self) -> None:
+        self.assertEqual(("coding-worker", "code-reviewer"), REQUIRED_PROFILES)
+
     def _profile(
         self,
         root: Path,

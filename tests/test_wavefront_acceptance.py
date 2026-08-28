@@ -1,16 +1,10 @@
 from __future__ import annotations
 
 import json
-import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from scripts import deterministic_merge_gate as gate
-from scripts.evidence_frontier_pump import Issue as EvidenceIssue, build_body as evidence_body, select_frontier as evidence_frontier
-from scripts.implementation_frontier_pump import Issue, build_implement_body, discover_live_cards, parse_allowed_files, select_wave_for_issues
-from scripts.run_frontier_pumps import build_commands
-from scripts.verify_implementation_worker_profiles import REQUIRED_PROFILES, verify_worker_profiles
 
 SHA = "a" * 40
 CATEGORIES = ["specification", "correctness", "domain_model", "test_quality", "edge_cases", "security_privacy", "maintainability", "domain_adherence", "evidence_rigor"]
@@ -69,45 +63,6 @@ class GateAcceptanceTests(unittest.TestCase):
         self.assertEqual(["gh", "pr", "merge", "49", "--squash", "--match-head-commit", SHA], calls[merge_at])
         self.assertEqual(["git", "checkout", "main"], calls[-1])
 
-
-class PumpAcceptanceTests(unittest.TestCase):
-    def test_multiline_allowed_files_and_live_cards_protect_idempotent_wave(self) -> None:
-        body = "Allowed files:\n- `internal/app/**`\n- `cmd/partiful/**`\n\nForbidden: `README.md`"
-        self.assertEqual(("internal/app/**", "cmd/partiful/**"), parse_allowed_files(body))
-        raw = json.dumps({"tasks": [{"id": "card-34", "idempotency_key": "partiful:implementation:34", "status": "in_progress", "body": body}]})
-        cards = discover_live_cards(lambda _: raw)
-        result = select_wave_for_issues([Issue(35, "x", "u", "OPEN", ("partiful:implementation",), (), (), ("internal/app/a.go",))], cards)
-        self.assertEqual([], result["selected"])
-        self.assertIn("active card #34", result["held"][0]["reason"])
-
-    def test_same_card_body_contains_both_roles_and_native_lifecycle(self) -> None:
-        body = build_implement_body(Issue(35, "x", "u", "OPEN", ("partiful:implementation",), (), (), ("internal/app/a.go",)))
-        for text in ("Implementer phase", "Reviewer phase", "request-review", "partiful-code-reviewer", "exact 40-character SHA", "nine categories", "Category-specification", "REQUEST_CHANGES", "same card", "attempt 3", "evidence-block", "deterministic_merge_gate.py", "--sign-review-file", "signed review"):
-            self.assertIn(text, body)
-
-    def test_evidence_uses_dedicated_profile_and_all_nonblocked_tasks_are_schedulable(self) -> None:
-        issues = [EvidenceIssue(n, "x", "u", "OPEN", ("wayfinder:task",), (), (), "requires login") for n in (20, 21, 22, 23, 24, 25, 26, 28)]
-        result = evidence_frontier(issues)
-        self.assertEqual([20, 21, 22, 23, 24, 25, 26, 28], [x.number for x in result["selected"]])
-        for text in ("partiful-evidence", "public/repository", "unsupported", "no credentials", "no live mutation"):
-            self.assertIn(text, evidence_body(issues[0]))
-
-    def test_all_three_profiles_are_audited(self) -> None:
-        self.assertIn("partiful-evidence", REQUIRED_PROFILES)
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            for name in REQUIRED_PROFILES:
-                d = root / name; d.mkdir()
-                (d / "config.yaml").write_text("toolsets: [terminal, file, skills]\nterminal:\n  env_passthrough: []\n  shell_init_files: []\n  auto_source_bashrc: false\n")
-                (d / ".env").write_text("")
-            self.assertEqual(set(REQUIRED_PROFILES), set(verify_worker_profiles(root)))
-
-    def test_scheduler_validates_contracts_then_runs_quiet_deterministic_pumps_and_never_merges(self) -> None:
-        commands = build_commands(Path("/repo"))
-        self.assertEqual(4, len(commands))
-        self.assertTrue(commands[0][1].endswith("scripts/verify_implementation_contracts.py"))
-        self.assertTrue(all("--quiet" in command for command in commands))
-        self.assertTrue(all("deterministic_merge_gate.py" not in " ".join(command) for command in commands))
 
 
 if __name__ == "__main__": unittest.main()

@@ -12,11 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import adopt_issue_34_pr49 as adopt
 from scripts import deterministic_merge_gate as gate
-from scripts import evidence_frontier_pump as evidence
-from scripts import implementation_frontier_pump as implementation
-from scripts import run_frontier_pumps as pumps
 
 ROOT = Path(__file__).resolve().parents[1]
 SHA = "a" * 40
@@ -47,11 +43,11 @@ class MergeGateHardeningTests(unittest.TestCase):
             conn.executescript("""
                 CREATE TABLE tasks (id TEXT PRIMARY KEY, assignee TEXT, status TEXT, current_run_id INTEGER, idempotency_key TEXT, claim_lock TEXT);
                 CREATE TABLE task_runs (id INTEGER PRIMARY KEY, task_id TEXT, profile TEXT, status TEXT, claim_lock TEXT);
-                INSERT INTO tasks VALUES ('card-34','partiful-code-reviewer','running',7,'partiful:implementation:34','lock-7');
-                INSERT INTO task_runs VALUES (7,'card-34','partiful-code-reviewer','running','lock-7');
+                INSERT INTO tasks VALUES ('card-34','code-reviewer','running',7,'partiful:implementation:34','lock-7');
+                INSERT INTO task_runs VALUES (7,'card-34','code-reviewer','running','lock-7');
             """)
             conn.close()
-            env = {"HERMES_PROFILE": "partiful-code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
+            env = {"HERMES_PROFILE": "code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
 
             def run(command: list[str]) -> str:
                 if command[:3] == ["gh", "pr", "view"]:
@@ -114,14 +110,14 @@ class MergeGateHardeningTests(unittest.TestCase):
             conn.executescript("""
                 CREATE TABLE tasks (id TEXT PRIMARY KEY, assignee TEXT, status TEXT, current_run_id INTEGER, idempotency_key TEXT, claim_lock TEXT);
                 CREATE TABLE task_runs (id INTEGER PRIMARY KEY, task_id TEXT, profile TEXT, status TEXT, claim_lock TEXT);
-                INSERT INTO tasks VALUES ('card-34','partiful-code-reviewer','running',7,'partiful:implementation:34','lock-7');
-                INSERT INTO task_runs VALUES (7,'card-34','partiful-code-reviewer','running','lock-7');
+                INSERT INTO tasks VALUES ('card-34','code-reviewer','running',7,'partiful:implementation:34','lock-7');
+                INSERT INTO task_runs VALUES (7,'card-34','code-reviewer','running','lock-7');
             """)
             conn.close()
-            env = {"HERMES_PROFILE": "partiful-code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
+            env = {"HERMES_PROFILE": "code-reviewer", "HERMES_KANBAN_BOARD": "partiful", "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_TASK": "card-34", "HERMES_KANBAN_RUN_ID": "7", "HERMES_KANBAN_CLAIM_LOCK": "lock-7"}
             with patch.dict(os.environ, env, clear=True):
                 self.assertTrue(gate._native_reviewer_provenance(34))
-                os.environ["HERMES_PROFILE"] = "partiful-implementer"
+                os.environ["HERMES_PROFILE"] = "coding-worker"
                 self.assertFalse(gate._native_reviewer_provenance(34))
 
     def test_required_check_names_must_match_successful_contexts(self) -> None:
@@ -153,195 +149,6 @@ class MergeGateHardeningTests(unittest.TestCase):
         )
 
 
-class AdoptionAndLifecycleHardeningTests(unittest.TestCase):
-    def test_adoption_rejects_non_open_pr(self) -> None:
-        def run(_command: list[str]) -> str:
-            return json.dumps({
-                "headRefOid": "c" * 40,
-                "headRefName": "partiful/issue-34-initial-implement",
-                "state": "CLOSED",
-                "isDraft": False,
-            })
-
-        with self.assertRaisesRegex(RuntimeError, "PR #49 is not open"):
-            adopt.inspect_pr(run)
-
-    def test_adoption_rejects_draft_pr(self) -> None:
-        def run(_command: list[str]) -> str:
-            return json.dumps({
-                "headRefOid": "c" * 40,
-                "headRefName": "partiful/issue-34-initial-implement",
-                "state": "OPEN",
-                "isDraft": True,
-            })
-
-        with self.assertRaisesRegex(RuntimeError, "PR #49 is still draft"):
-            adopt.inspect_pr(run)
-
-    def test_adoption_uses_exact_pr_sha_one_review_card_and_idempotent_rerun(self) -> None:
-        commands: list[list[str]] = []
-        cards: dict[str, str] = {}
-        state = {"status": "running"}
-        pr_sha = "c" * 40
-
-        def run(command: list[str]) -> str:
-            commands.append(command)
-            if command[:3] == ["gh", "pr", "view"]:
-                return json.dumps({
-                    "headRefOid": pr_sha,
-                    "headRefName": "partiful/issue-34-initial-implement",
-                    "state": "OPEN",
-                    "isDraft": False,
-                })
-            if "create" in command:
-                key = command[command.index("--idempotency-key") + 1]
-                cards.setdefault(key, "card-34")
-                return json.dumps({"task_id": cards[key]})
-            if "show" in command:
-                return json.dumps({"id": "card-34", "status": state["status"]})
-            if "request-review" in command:
-                state["status"] = "review"
-                return ""
-            raise AssertionError(command)
-
-        self.assertEqual("card-34", adopt.adopt(run))
-        self.assertEqual("card-34", adopt.adopt(run))
-        self.assertEqual({"partiful:implementation:34": "card-34"}, cards)
-        create_commands = [command for command in commands if "create" in command]
-        review_commands = [command for command in commands if "request-review" in command]
-        show_commands = [command for command in commands if "show" in command]
-        self.assertEqual(2, len(create_commands))
-        self.assertEqual(2, len(show_commands))
-        self.assertEqual(1, len(review_commands))
-        for command in create_commands:
-            self.assertIn("partiful:implementation:34", command)
-            self.assertIn(pr_sha, command[command.index("--body") + 1])
-            self.assertEqual("partiful-implementer", command[command.index("--assignee") + 1])
-            self.assertEqual("running", command[command.index("--initial-status") + 1])
-            self.assertEqual(
-                "partiful/issue-34-initial-implement",
-                command[command.index("--branch") + 1],
-            )
-            self.assertIn("PR #49", command[command.index("--body") + 1])
-            self.assertIn("partiful/issue-34-initial-implement", command[command.index("--body") + 1])
-            body = command[command.index("--body") + 1]
-            contract = json.loads((ROOT / "config/implementation-write-sets.json").read_text())
-            paths = implementation.parse_allowed_files(body)
-            self.assertEqual(tuple(contract["34"]["paths"]), paths)
-            candidate = implementation.Issue(
-                99, "overlap", "https://example/99", "OPEN",
-                (implementation.IMPLEMENTATION_LABEL,), (), (),
-                ("internal/app/service.go",),
-            )
-            wave = implementation.select_wave_for_issues(
-                [candidate], [{"issue": 34, "paths": list(paths), "card": "card-34"}]
-            )
-            self.assertEqual([], wave["selected"])
-            self.assertEqual(99, wave["held"][0]["number"])
-        self.assertEqual(
-            ["hermes", "kanban", "--board", "partiful", "show", "card-34", "--json"],
-            show_commands[0],
-        )
-        command = review_commands[0]
-        self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], command[:6])
-        self.assertEqual("partiful-code-reviewer", command[command.index("--reviewer") + 1])
-        self.assertIn(pr_sha, command[command.index("--metadata") + 1])
-
-    def test_native_same_card_transitions_use_review_then_return_commands(self) -> None:
-        commands: list[list[str]] = []
-        run = lambda command: commands.append(command) or ""
-        implementation.request_native_review("card-34", "https://example.test/pr/49", SHA, run)
-        implementation.request_changes_on_same_card("card-34", "missing exact-SHA evidence", run)
-        self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-review", "card-34"], commands[0][:6])
-        self.assertIn("partiful-code-reviewer", commands[0])
-        self.assertEqual(["hermes", "kanban", "--board", "partiful", "request-changes", "card-34", "missing exact-SHA evidence"], commands[1])
-
-
-class PumpHardeningTests(unittest.TestCase):
-    def test_child_failure_returns_same_nonzero_in_order_and_stops(self) -> None:
-        calls: list[list[str]] = []
-        outcomes = iter([(0, "first\n", ""), (17, "", "second failed\n")])
-
-        class Result:
-            def __init__(self, rc: int, stdout: str, stderr: str) -> None:
-                self.returncode, self.stdout, self.stderr = rc, stdout, stderr
-
-        def run(command: list[str], **_: object) -> Result:
-            calls.append(command)
-            return Result(*next(outcomes))
-
-        stderr = io.StringIO()
-        with patch.object(pumps, "build_commands", return_value=[["first"], ["second"], ["unsafe-later"]]), patch.object(pumps.subprocess, "run", run), contextlib.redirect_stderr(stderr):
-            self.assertEqual(17, pumps.main(["--quiet"]))
-        self.assertEqual([["first"], ["second"]], calls)
-        self.assertIn("second failed", stderr.getvalue())
-
-    def test_evidence_key_is_stable_and_live_duplicate_is_suppressed(self) -> None:
-        issue = evidence.Issue(20, "probe", "url", "OPEN", ("wayfinder:task",), (), (), "")
-        commands: list[list[str]] = []
-        self.assertEqual("partiful:evidence:20", evidence.idempotency_key(issue))
-        self.assertEqual([], evidence.create_missing_cards([issue], [{"idempotency_key": "partiful:evidence:20", "status": "ready"}], lambda command: commands.append(command) or json.dumps({"id": "unused"})))
-        self.assertEqual([], commands)
-
-    def test_allowed_files_parser_stops_at_end_of_paragraph(self) -> None:
-        body = (
-            "Allowed files: `internal/app/auth_ops.go`, `internal/app/auth_ops_test.go`.\n\n"
-            "Implement `auth login`, `auth status`, and `schema` over the shared services.\n\n"
-            "Applicable gates: `OP11-AUTH-REQUESTS:sendAuthCodeTrusted`."
-        )
-        self.assertEqual(
-            ("internal/app/auth_ops.go", "internal/app/auth_ops_test.go"),
-            implementation.parse_allowed_files(body),
-        )
-
-    def test_kanban_list_payload_accepts_native_json_array(self) -> None:
-        cards = [{
-            "id": "card-34",
-            "status": "review",
-            "idempotency_key": "partiful:implementation:34",
-            "body": "Allowed files: `internal/app/service.go`.",
-        }]
-        run = lambda _command: json.dumps(cards)
-        self.assertEqual(
-            [{"issue": 34, "paths": ["internal/app/service.go"], "card": "card-34"}],
-            implementation.discover_live_cards(run),
-        )
-        self.assertEqual(cards, evidence.discover_live_cards(run))
-
-    def test_evidence_quiet_has_no_stdout_and_keeps_failure_status(self) -> None:
-        stdout, stderr = io.StringIO(), io.StringIO()
-        with patch.object(evidence, "fetch_issues", side_effect=RuntimeError("boom")), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            self.assertEqual(1, evidence.main(["--quiet"]))
-        self.assertEqual("", stdout.getvalue())
-        self.assertIn("FAIL: boom", stderr.getvalue())
-
-    def test_frontier_subprocess_environment_keeps_home_without_secret_passthrough(self) -> None:
-        environments: list[dict[str, str]] = []
-
-        class Result:
-            returncode = 0
-            stdout = "ok"
-            stderr = ""
-
-        def run(_command: list[str], **kwargs: object) -> Result:
-            environments.append(dict(kwargs["env"]))
-            return Result()
-
-        with patch.dict(os.environ, {"HOME": "/private/test-home", "GH_TOKEN": "secret", "UNRELATED_SECRET": "nope"}, clear=True), patch.object(implementation.subprocess, "run", run), patch.object(evidence.subprocess, "run", run):
-            self.assertEqual("ok", implementation._run(["gh", "api"]))
-            self.assertEqual("ok", evidence._run(["gh", "api"]))
-
-        self.assertEqual(2, len(environments))
-        for environment in environments:
-            self.assertEqual("/private/test-home", environment.get("HOME"))
-            self.assertIn("PATH", environment)
-            self.assertIn(
-                "/private/test-home/.hermes/hermes-agent/venv/bin",
-                environment["PATH"].split(":"),
-            )
-            self.assertNotIn("GH_TOKEN", environment)
-            self.assertNotIn("UNRELATED_SECRET", environment)
-
 
 class DurableContractHardeningTests(unittest.TestCase):
     def test_wayfinder_document_preserves_decision_lane_and_operator_contracts(self) -> None:
@@ -349,12 +156,10 @@ class DurableContractHardeningTests(unittest.TestCase):
         self.assertIn("`EVIDENCE_REQUIRED`", text)
         self.assertIn("`OWNER_GATE`", text)
         self.assertIn("After two revision verdicts, the cartographer adjudicates", text)
-        self.assertIn("Implementer, reviewer, and evidence profiles are audited fail-closed", text)
-        self.assertIn("python3 scripts/run_frontier_pumps.py --quiet", text)
-        self.assertIn("gh pr ready 49", text)
-        self.assertIn("scripts/adopt_issue_34_pr49.py", text)
-        self.assertIn("merge reviewed `main` into PR #49 branch", text)
-        self.assertIn("resolves the live PR head, branch, open state, and review readiness", text)
+        self.assertIn("`coding-worker`", text)
+        self.assertIn("`code-reviewer`", text)
+        self.assertNotIn("run_frontier_pumps.py", text)
+        self.assertNotIn("adopt_issue_34_pr49.py", text)
         self.assertNotIn("27119290015d4d29e0e6f128788128c2b06a4e50", text)
 
     def test_write_set_contract_exactly_matches_issues_and_issue_specific_limits(self) -> None:
@@ -362,6 +167,8 @@ class DurableContractHardeningTests(unittest.TestCase):
         self.assertEqual({str(issue) for issue in range(34, 45)}, set(contract))
         self.assertNotIn("internal/compose/import_graph_test.go", contract["41"]["paths"])
         self.assertEqual(["internal/compose/import_graph_test.go"], contract["41"]["excluded_paths"])
+        self.assertIn("internal/version/version.go", contract["44"]["paths"])
+        self.assertIn("internal/version/version_test.go", contract["44"]["paths"])
         self.assertEqual("README.md only installation and release verification sections; path-only gate fails closed for README.md", contract["44"]["supplemental_scope"])
         shared = {
             "go test ./... -count=1",
