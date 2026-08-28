@@ -1,0 +1,4050 @@
+{
+  "command": {
+    "commands": [
+      {
+        "cli_path": "auth login",
+        "id": "CMD-001",
+        "mcp_name": null,
+        "sha256": "533cbbd17f3d6b251b9cb0e5f81c0e7636e0809fc2c0db7641683e3bc249a8da"
+      },
+      {
+        "cli_path": "auth status",
+        "id": "CMD-002",
+        "mcp_name": "auth_status",
+        "sha256": "3222efcd284efeb0ae477b25d86e5899edceeff1884cdd7977a7a23b915d29ae"
+      },
+      {
+        "cli_path": "auth logout",
+        "id": "CMD-003",
+        "mcp_name": "auth_logout",
+        "sha256": "8029b67add19f7e55ebf02704cce330fbb57d565ac4046f22290303eb10aff68"
+      },
+      {
+        "cli_path": "events list",
+        "id": "CMD-004",
+        "mcp_name": "events_list",
+        "sha256": "eaed79da6dfe37ed47141bd69d3616f221a2e31e2f284f8ddefb5470f1c3590d"
+      },
+      {
+        "cli_path": "events get",
+        "id": "CMD-005",
+        "mcp_name": "events_get",
+        "sha256": "70e7e6de76eb566cb6734fc6a3f880f5db364b29783cc6aefe996dd11f383b12"
+      },
+      {
+        "cli_path": "events create",
+        "id": "CMD-006",
+        "mcp_name": "events_create",
+        "sha256": "a7d6715d3d59c672389e8f2ca63df19b076baff084569ac6c1b838705d407e0c"
+      },
+      {
+        "cli_path": "events update",
+        "id": "CMD-007",
+        "mcp_name": "events_update",
+        "sha256": "82b9c3fb0a32b6b86b367ffec80df503fa5a443926540d54fcd751646bb390a9"
+      },
+      {
+        "cli_path": "events cancel",
+        "id": "CMD-008",
+        "mcp_name": "events_cancel",
+        "sha256": "9f7909077ee41b18e9b019dee9289f53388a3c5198114dcf83bf576da9ddfdcf"
+      },
+      {
+        "cli_path": "guests list",
+        "id": "CMD-009",
+        "mcp_name": "guests_list",
+        "sha256": "cb37e042d1351b7d6d7dfc046d84c8c7c80ac16b6c30154d9851e2439764e03b"
+      },
+      {
+        "cli_path": "guests invite",
+        "id": "CMD-010",
+        "mcp_name": "guests_invite",
+        "sha256": "22e34a2195117ab8d483e3045e30a2aa5314e583935d82334ddaf0ebb1a6787c"
+      },
+      {
+        "cli_path": "rsvp get",
+        "id": "CMD-011",
+        "mcp_name": "rsvp_get",
+        "sha256": "a07c61b9309455c78b8682f9dd25f26b3f0ada8a6e1b6a2850e181f319c01709"
+      },
+      {
+        "cli_path": "rsvp set",
+        "id": "CMD-012",
+        "mcp_name": "rsvp_set",
+        "sha256": "b014eaf50cb7391327f1a16c2ac1a6fb1529ba604570671d536f69ceb9076a33"
+      },
+      {
+        "cli_path": "contacts list",
+        "id": "CMD-013",
+        "mcp_name": "contacts_list",
+        "sha256": "2566c848e779f10933d30d29602d1b1448a8d62bb4fa06367976d58e2ead2dda"
+      },
+      {
+        "cli_path": "cohosts invite",
+        "id": "CMD-014",
+        "mcp_name": "cohosts_invite",
+        "sha256": "e6278ae1ee87be64c1ac6ac486bb77c9e731ef8665b08b4500c6ebbb771668af"
+      },
+      {
+        "cli_path": "cohosts revoke-invite",
+        "id": "CMD-015",
+        "mcp_name": "cohosts_revoke_invite",
+        "sha256": "8888087074bff0141adbdd68e83e97a28b6791a257cd9e67a5e98a78bcb2c260"
+      },
+      {
+        "cli_path": "cohosts remove",
+        "id": "CMD-016",
+        "mcp_name": "cohosts_remove",
+        "sha256": "145d6aedf7497cb80be7444a3abc0f3c70c913a5c8288b60f4e0b0da92d0c920"
+      },
+      {
+        "cli_path": "cohosts link create",
+        "id": "CMD-017",
+        "mcp_name": "cohosts_link_create",
+        "sha256": "74eb3e4d8bf5aca9582ee591fc89aed28b3fe80a176934999ae67d1a4b6e55d4"
+      },
+      {
+        "cli_path": "cohosts link revoke",
+        "id": "CMD-018",
+        "mcp_name": "cohosts_link_revoke",
+        "sha256": "14740ff26cc870f4e964e4d241377f30b6305f594f2a0928237ed109737bb3b0"
+      },
+      {
+        "cli_path": "blasts send",
+        "id": "CMD-019",
+        "mcp_name": "blasts_send",
+        "sha256": "c9c3f4d2a3924b1ff69d6a9614bbc73f00285d80923fa8fa6911bfc647888e44"
+      },
+      {
+        "cli_path": "posters list",
+        "id": "CMD-020",
+        "mcp_name": "posters_list",
+        "sha256": "dc673259d6982532f26cbd502e2a31a2fcb9f63d963a143d3d89d57bdd365e96"
+      },
+      {
+        "cli_path": "posters search",
+        "id": "CMD-021",
+        "mcp_name": "posters_search",
+        "sha256": "4e69ced4de10004e64d38393efcd44ef5408cdd8a5b79d2c4fe7d4e90264f819"
+      },
+      {
+        "cli_path": "schema",
+        "id": "CMD-022",
+        "mcp_name": "schema",
+        "sha256": "07a5154026959b4cf06c5b148725695ab8ad75001706342c3b02f5510e68b0f5"
+      },
+      {
+        "cli_path": "doctor",
+        "id": "CMD-023",
+        "mcp_name": "doctor",
+        "sha256": "63ac5d9a6d7f2485b41d83abcd2cbdb328730409d61693df08828753867c2059"
+      },
+      {
+        "cli_path": "version",
+        "id": "CMD-024",
+        "mcp_name": "version",
+        "sha256": "03f0fa6f21d930ef0e45c2dd19339bb4858cf7eaac841d7e7360d678979f3f67"
+      }
+    ],
+    "format": 1
+  },
+  "command_revision": "1",
+  "evidence": {
+    "sha256": "39d8751eb9614febaa93bea49e27785fcc0de32a76b6b57dc461973002eac5a5"
+  },
+  "format": 1,
+  "transport": {
+    "executable": {
+      "files": {
+        "internal/app/auth_ops.go": {
+          "literal_count": 20,
+          "literal_sha256": "253f68dada3e85fb98eafb40b03e1ae9fccb1583492017f1296d3fc3698827fa"
+        },
+        "internal/app/blast_ops.go": {
+          "literal_count": 59,
+          "literal_sha256": "bbbb786f4ebfd58640fe38338a7f5fc3f48f280b9f1b0e9100a555461b680243"
+        },
+        "internal/app/event_ops.go": {
+          "literal_count": 86,
+          "literal_sha256": "e6d16c7c7ee221d5186732a0b9b7ad2c87a509bf71314191881c4773216ea228"
+        },
+        "internal/app/invocation.go": {
+          "literal_count": 6,
+          "literal_sha256": "fb357b0820608cd160540541f71eda6e772c8dd4124d3194dc384fbc2fef2d84"
+        },
+        "internal/app/people_ops.go": {
+          "literal_count": 67,
+          "literal_sha256": "13dadd0d42d95821a37895f87e9a591d902eff484246e85e4d4fcd8e4e8106a9"
+        },
+        "internal/app/poster_ops.go": {
+          "literal_count": 11,
+          "literal_sha256": "5d4bda54a382f8ec3bb9e35b9d61195335a8f8330f34ea30a0b9477587067b28"
+        },
+        "internal/app/project.go": {
+          "literal_count": 5,
+          "literal_sha256": "32c81f037e3416250d7873da33090e05a2e2e0f62b0646af323089e5d05c5d07"
+        },
+        "internal/app/utility_ops.go": {
+          "literal_count": 21,
+          "literal_sha256": "9d196697eb56058ecaf5eaeebb2c603c8bda151e97702626780006ba969dde1c"
+        },
+        "internal/transport/callable/client.go": {
+          "literal_count": 298,
+          "literal_sha256": "344c93f4a5c31adcf2a7cea782ca28c30849d2a5280477b658c35cbdccb3d084"
+        },
+        "internal/transport/contracts.go": {
+          "literal_count": 6,
+          "literal_sha256": "60ec11926596f338220b4238d8db804cf1debfcf3ea6b45a895cb56ce5ba29f0"
+        },
+        "internal/transport/firebaseauth/blocked.go": {
+          "literal_count": 2,
+          "literal_sha256": "52434005d08b985adeffe2d7094b76bdca27861960e4e7d4dafc7fb4090c310f"
+        },
+        "internal/transport/firestore/client.go": {
+          "literal_count": 95,
+          "literal_sha256": "0d20904670796d7b9a7a543991170b695e72123fe857834525010efa74780fdf"
+        },
+        "internal/transport/poster/client.go": {
+          "literal_count": 42,
+          "literal_sha256": "daa2869783af747ba453f6b323f7192063c628efdcfaf4840a180e7ea266a539"
+        }
+      },
+      "format": 1
+    },
+    "openapi": {
+      "components": {
+        "schemas": {
+          "AddGuestCompletionResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "result": {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {}
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "CallableAuthError": {
+            "additionalProperties": true,
+            "properties": {
+              "error": {
+                "additionalProperties": true,
+                "properties": {
+                  "details": {
+                    "additionalProperties": true,
+                    "properties": {
+                      "authErrorCode": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "status"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "CallableCompletionResponse": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "result": {}
+                },
+                "required": [
+                  "result"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "data": {}
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "CallableNotFoundError": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "const": "NOT_FOUND",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "status"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "CallableResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "result": {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {}
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "CallableUnauthenticatedError": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "const": "UNAUTHENTICATED",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "status"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "CancelEventCompletionResponse": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "result": {}
+                },
+                "required": [
+                  "result"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {}
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "Contact": {
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "sharedEventCount": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sharedEventCount"
+            ],
+            "type": "object"
+          },
+          "CreateEventCompletionResponse": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "result": {}
+                },
+                "required": [
+                  "result"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {}
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "CurrentGuest": {
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "plusOnes": {},
+              "status": {
+                "$ref": "#/components/schemas/GuestStatus"
+              },
+              "userId": {}
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "EventCustomField": {
+            "additionalProperties": true,
+            "properties": {
+              "icon": {
+                "type": "string"
+              },
+              "url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "icon",
+              "value"
+            ],
+            "type": "object"
+          },
+          "EventDisplaySettings": {
+            "additionalProperties": true,
+            "properties": {
+              "effect": {
+                "type": "string"
+              },
+              "theme": {
+                "type": "string"
+              },
+              "titleFont": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "theme",
+              "effect",
+              "titleFont"
+            ],
+            "type": "object"
+          },
+          "EventDraft": {
+            "additionalProperties": true,
+            "properties": {
+              "allowGuestPhotoUpload": {
+                "const": true,
+                "type": "boolean"
+              },
+              "allowGuestsToInviteMutuals": {
+                "const": true,
+                "type": "boolean"
+              },
+              "customFields": {
+                "items": {
+                  "$ref": "#/components/schemas/EventCustomField"
+                },
+                "type": "array"
+              },
+              "displayInviteButton": {
+                "const": true,
+                "type": "boolean"
+              },
+              "displaySettings": {
+                "$ref": "#/components/schemas/EventDisplaySettings"
+              },
+              "enableGuestReminders": {
+                "const": true,
+                "type": "boolean"
+              },
+              "enableWaitlist": {
+                "type": "boolean"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "guestStatusCounts": {
+                "$ref": "#/components/schemas/NewEventGuestStatusCounts"
+              },
+              "image": {
+                "$ref": "#/components/schemas/PartifulPosterImage"
+              },
+              "isPublic": {
+                "type": "boolean"
+              },
+              "locationInfo": {
+                "$ref": "#/components/schemas/EventLocationInfo"
+              },
+              "maxCapacity": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "rsvpButtonGlyphType": {
+                "const": "emojis",
+                "type": "string"
+              },
+              "rsvpsEnabled": {
+                "const": true,
+                "type": "boolean"
+              },
+              "showActivityTimestamps": {
+                "const": true,
+                "type": "boolean"
+              },
+              "showGuestCount": {
+                "const": true,
+                "type": "boolean"
+              },
+              "showGuestList": {
+                "const": true,
+                "type": "boolean"
+              },
+              "showHostList": {
+                "const": true,
+                "type": "boolean"
+              },
+              "startDate": {
+                "type": "string"
+              },
+              "status": {
+                "const": "UNSAVED",
+                "type": "string"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "visibility": {
+                "const": "public",
+                "type": "string"
+              }
+            },
+            "required": [
+              "title",
+              "startDate",
+              "timezone",
+              "guestStatusCounts",
+              "displaySettings",
+              "status",
+              "rsvpButtonGlyphType",
+              "image",
+              "showHostList",
+              "showGuestCount",
+              "showGuestList",
+              "showActivityTimestamps",
+              "displayInviteButton",
+              "visibility",
+              "allowGuestPhotoUpload",
+              "enableGuestReminders",
+              "rsvpsEnabled",
+              "allowGuestsToInviteMutuals"
+            ],
+            "type": "object"
+          },
+          "EventInfo": {
+            "properties": {
+              "atCapacity": {
+                "type": "boolean"
+              },
+              "customFields": {
+                "items": {
+                  "$ref": "#/components/schemas/EventCustomField"
+                },
+                "type": "array"
+              },
+              "displaySettings": {
+                "type": "object"
+              },
+              "enableWaitlist": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "endDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "guestAction": {
+                "enum": [
+                  "APPLY",
+                  "RSVP"
+                ],
+                "type": "string"
+              },
+              "guestCount": {},
+              "guestStatusCounts": {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              "hasGuests": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "string"
+              },
+              "image": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "maxCapacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "maxCountPerGuest": {
+                "type": "number"
+              },
+              "ownerIds": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "plusOneNamesRequired": {
+                "type": "boolean"
+              },
+              "questionnaireEnabled": {
+                "type": "boolean"
+              },
+              "questionnaireVersions": {
+                "items": {},
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "remainingCapacity": {
+                "type": "number"
+              },
+              "rsvpsEnabled": {
+                "type": "boolean"
+              },
+              "startDate": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/EventStatus"
+              },
+              "ticketing": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "visibility": {}
+            }
+          },
+          "EventLocationInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "type": {
+                "enum": [
+                  "freeform",
+                  "structured"
+                ],
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "EventStatus": {
+            "enum": [
+              "UNSAVED",
+              "PUBLISHED",
+              "CANCELED"
+            ],
+            "type": "string"
+          },
+          "FirebaseLookupResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "users": {
+                "items": {
+                  "$ref": "#/components/schemas/FirebaseLookupUser"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "users"
+            ],
+            "type": "object"
+          },
+          "FirebaseLookupUser": {
+            "additionalProperties": true,
+            "properties": {
+              "createdAt": {
+                "type": "string"
+              },
+              "customAuth": {
+                "type": "boolean"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "lastLoginAt": {
+                "type": "string"
+              },
+              "lastRefreshAt": {
+                "type": "string"
+              },
+              "localId": {
+                "type": "string"
+              },
+              "phoneNumber": {
+                "type": "string"
+              },
+              "photoUrl": {
+                "type": "string"
+              },
+              "providerUserInfo": {
+                "items": {
+                  "$ref": "#/components/schemas/FirebaseProviderUserInfo"
+                },
+                "type": "array"
+              },
+              "validSince": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "localId"
+            ],
+            "type": "object"
+          },
+          "FirebaseProviderUserInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "phoneNumber": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "rawId": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "FirebaseSignInResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "expiresIn": {
+                "type": "string"
+              },
+              "idToken": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "refreshToken": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "idToken",
+              "refreshToken",
+              "expiresIn"
+            ],
+            "type": "object"
+          },
+          "FirebaseTokenError": {
+            "additionalProperties": true,
+            "properties": {
+              "error": {
+                "additionalProperties": true,
+                "properties": {
+                  "code": {
+                    "type": "number"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "FirebaseValidationError": {
+            "additionalProperties": true,
+            "properties": {
+              "error": {
+                "additionalProperties": true,
+                "properties": {
+                  "code": {
+                    "type": "number"
+                  },
+                  "errors": {
+                    "items": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "domain": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "FirestoreArrayValue": {
+            "additionalProperties": false,
+            "properties": {
+              "values": {
+                "items": {
+                  "$ref": "#/components/schemas/FirestoreValue"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "FirestoreDocument": {
+            "additionalProperties": false,
+            "properties": {
+              "createTime": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "fields": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FirestoreValue"
+                },
+                "type": "object"
+              },
+              "name": {
+                "type": "string"
+              },
+              "updateTime": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "FirestoreGuestDocument": {
+            "properties": {
+              "createTime": {
+                "type": "string"
+              },
+              "fields": {
+                "properties": {
+                  "count": {
+                    "$ref": "#/components/schemas/FirestoreObservedStringValue"
+                  },
+                  "createdAt": {
+                    "$ref": "#/components/schemas/FirestoreObservedStringValue"
+                  },
+                  "name": {
+                    "$ref": "#/components/schemas/FirestoreObservedStringValue"
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/FirestoreObservedStringValue"
+                  }
+                },
+                "required": [
+                  "count",
+                  "createdAt",
+                  "name",
+                  "status"
+                ],
+                "type": "object"
+              },
+              "name": {
+                "type": "string"
+              },
+              "updateTime": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "fields",
+              "createTime",
+              "updateTime"
+            ],
+            "type": "object"
+          },
+          "FirestoreLatLng": {
+            "additionalProperties": false,
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "type": "object"
+          },
+          "FirestoreListResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "documents": {
+                "items": {
+                  "$ref": "#/components/schemas/FirestoreDocument"
+                },
+                "type": "array"
+              },
+              "nextPageToken": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "FirestoreMapValue": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FirestoreValue"
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "FirestoreObservedStringValue": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "FirestorePermissionDeniedError": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "type": "integer"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "const": "PERMISSION_DENIED",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "status"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          },
+          "FirestoreValue": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "nullValue": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "nullValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "booleanValue": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "booleanValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "integerValue": {
+                    "pattern": "^-?[0-9]+$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "integerValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "doubleValue": {
+                    "oneOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "enum": [
+                          "NaN",
+                          "Infinity",
+                          "-Infinity"
+                        ],
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "doubleValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "timestampValue": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timestampValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "stringValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "stringValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bytesValue": {
+                    "format": "byte",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "bytesValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "referenceValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "referenceValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "geoPointValue": {
+                    "$ref": "#/components/schemas/FirestoreLatLng"
+                  }
+                },
+                "required": [
+                  "geoPointValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "arrayValue": {
+                    "$ref": "#/components/schemas/FirestoreArrayValue"
+                  }
+                },
+                "required": [
+                  "arrayValue"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mapValue": {
+                    "$ref": "#/components/schemas/FirestoreMapValue"
+                  }
+                },
+                "required": [
+                  "mapValue"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "FirestoreWriteDocument": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FirestoreValue"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "fields"
+            ],
+            "type": "object"
+          },
+          "GenerateEventCohostLinkCompletionResponse": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "result": {
+                    "$ref": "#/components/schemas/GenerateEventCohostLinkResult"
+                  }
+                },
+                "required": [
+                  "result"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/GenerateEventCohostLinkResult"
+                  }
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "GenerateEventCohostLinkResult": {
+            "additionalProperties": true,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "data"
+            ],
+            "type": "object"
+          },
+          "GetContactsResponse": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "data": {
+                    "items": {
+                      "$ref": "#/components/schemas/Contact"
+                    },
+                    "type": "array"
+                  },
+                  "paging": {
+                    "properties": {
+                      "nextCursor": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "data",
+                  "paging"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "GetCurrentGuestResponse": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "data": {
+                    "properties": {
+                      "currentGuest": {
+                        "$ref": "#/components/schemas/CurrentGuest"
+                      }
+                    },
+                    "required": [
+                      "currentGuest"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "GetEventInfoResponse": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "data": {
+                    "properties": {
+                      "event": {
+                        "$ref": "#/components/schemas/EventInfo"
+                      }
+                    },
+                    "required": [
+                      "event"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "GetGuestsResponse": {
+            "properties": {
+              "result": {
+                "properties": {
+                  "data": {
+                    "items": {
+                      "$ref": "#/components/schemas/GuestListItem"
+                    },
+                    "type": "array"
+                  },
+                  "paging": {
+                    "properties": {
+                      "nextCursor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "data",
+                  "paging"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "GuestListItem": {
+            "additionalProperties": true,
+            "properties": {
+              "anchorGuestId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "count": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/GuestStatus"
+              },
+              "userId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "status",
+              "count"
+            ],
+            "type": "object"
+          },
+          "GuestStatus": {
+            "enum": [
+              "READY_TO_SEND",
+              "SENDING",
+              "SEND_ERROR",
+              "DELIVERY_ERROR",
+              "SENT",
+              "INTERESTED",
+              "WAITLIST",
+              "MAYBE",
+              "DECLINED",
+              "GOING",
+              "PENDING_APPROVAL",
+              "APPROVED",
+              "WITHDRAWN",
+              "WAITLISTED_FOR_APPROVAL",
+              "REJECTED",
+              "RESPONDED_TO_FIND_A_TIME"
+            ],
+            "type": "string"
+          },
+          "HomePageEvent": {
+            "properties": {
+              "displaySettings": {
+                "type": "object"
+              },
+              "endDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "guest": {
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/GuestStatus"
+                  }
+                },
+                "type": "object"
+              },
+              "id": {
+                "type": "string"
+              },
+              "image": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ownerIds": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "startDate": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/EventStatus"
+              },
+              "timezone": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          },
+          "LoginTokenResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "result": {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {
+                    "additionalProperties": true,
+                    "properties": {
+                      "token": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "token"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "MarkEventInterestCompletionResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "result": {
+                "additionalProperties": true,
+                "properties": {
+                  "data": {}
+                },
+                "required": [
+                  "data"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "type": "object"
+          },
+          "NewEventGuestStatusCounts": {
+            "additionalProperties": false,
+            "properties": {
+              "APPROVED": {
+                "const": 0,
+                "type": "integer"
+              },
+              "DECLINED": {
+                "const": 0,
+                "type": "integer"
+              },
+              "DELIVERY_ERROR": {
+                "const": 0,
+                "type": "integer"
+              },
+              "GOING": {
+                "const": 0,
+                "type": "integer"
+              },
+              "INTERESTED": {
+                "const": 0,
+                "type": "integer"
+              },
+              "MAYBE": {
+                "const": 0,
+                "type": "integer"
+              },
+              "PENDING_APPROVAL": {
+                "const": 0,
+                "type": "integer"
+              },
+              "READY_TO_SEND": {
+                "const": 0,
+                "type": "integer"
+              },
+              "REJECTED": {
+                "const": 0,
+                "type": "integer"
+              },
+              "RESPONDED_TO_FIND_A_TIME": {
+                "const": 0,
+                "type": "integer"
+              },
+              "SENDING": {
+                "const": 0,
+                "type": "integer"
+              },
+              "SEND_ERROR": {
+                "const": 0,
+                "type": "integer"
+              },
+              "SENT": {
+                "const": 0,
+                "type": "integer"
+              },
+              "WAITLIST": {
+                "const": 0,
+                "type": "integer"
+              },
+              "WAITLISTED_FOR_APPROVAL": {
+                "const": 0,
+                "type": "integer"
+              },
+              "WITHDRAWN": {
+                "const": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "READY_TO_SEND",
+              "SENDING",
+              "SENT",
+              "SEND_ERROR",
+              "DELIVERY_ERROR",
+              "INTERESTED",
+              "MAYBE",
+              "GOING",
+              "DECLINED",
+              "WAITLIST",
+              "PENDING_APPROVAL",
+              "APPROVED",
+              "WITHDRAWN",
+              "RESPONDED_TO_FIND_A_TIME",
+              "WAITLISTED_FOR_APPROVAL",
+              "REJECTED"
+            ],
+            "type": "object"
+          },
+          "PartifulPosterImage": {
+            "additionalProperties": false,
+            "properties": {
+              "blurHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "poster": {
+                "$ref": "#/components/schemas/Poster"
+              },
+              "source": {
+                "const": "partiful_posters",
+                "type": "string"
+              },
+              "url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "poster",
+              "url",
+              "blurHash",
+              "contentType",
+              "name",
+              "height",
+              "width"
+            ],
+            "type": "object"
+          },
+          "Poster": {
+            "additionalProperties": true,
+            "properties": {
+              "blurHash": {
+                "type": "string"
+              },
+              "categories": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "height": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "url",
+              "contentType",
+              "width",
+              "height",
+              "tags",
+              "categories"
+            ],
+            "type": "object"
+          },
+          "RefreshTokenResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "access_token": {
+                "type": "string"
+              },
+              "expires_in": {
+                "type": "string"
+              },
+              "id_token": {
+                "type": "string"
+              },
+              "project_id": {
+                "type": "string"
+              },
+              "refresh_token": {
+                "type": "string"
+              },
+              "token_type": {
+                "type": "string"
+              },
+              "user_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "access_token",
+              "refresh_token",
+              "id_token",
+              "expires_in",
+              "token_type"
+            ],
+            "type": "object"
+          },
+          "RsvpDraft": {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "emailInvitationId": {
+                "type": "string"
+              },
+              "guestId": {
+                "type": "string"
+              },
+              "message": {
+                "maxLength": 400,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 50,
+                "minLength": 1,
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "plusOnes": {
+                "items": {},
+                "type": "array"
+              },
+              "questionnaireResponse": {
+                "$ref": "#/components/schemas/RsvpQuestionnaireResponse"
+              },
+              "shouldFollowOrgs": {
+                "const": false,
+                "type": "boolean"
+              },
+              "status": {
+                "enum": [
+                  "GOING",
+                  "MAYBE",
+                  "DECLINED"
+                ],
+                "type": "string"
+              },
+              "timezone": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "count",
+              "plusOnes",
+              "status",
+              "timezone",
+              "shouldFollowOrgs"
+            ],
+            "type": "object"
+          },
+          "RsvpQuestionnaireResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "answers": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              "questionnaireVersion": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "questionnaireVersion",
+              "answers"
+            ],
+            "type": "object"
+          },
+          "UploadData": {
+            "additionalProperties": true,
+            "properties": {
+              "contentType": {
+                "type": "string"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "type": "object"
+          },
+          "UploadPhotoResponse": {
+            "additionalProperties": true,
+            "properties": {
+              "result": {
+                "additionalProperties": true,
+                "properties": {
+                  "uploadData": {
+                    "$ref": "#/components/schemas/UploadData"
+                  }
+                },
+                "type": "object"
+              },
+              "uploadData": {
+                "$ref": "#/components/schemas/UploadData"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "securitySchemes": {
+          "firebaseApiKey": {
+            "in": "query",
+            "name": "key",
+            "type": "apiKey",
+            "x-publicValue": {
+              "sha256": "ce87f031153db8e60c6d91baa30b6bc0cf20f208144b93d4453e7606b99368c5"
+            }
+          },
+          "firebaseBearer": {
+            "scheme": "bearer",
+            "type": "http"
+          }
+        }
+      },
+      "openapi": "3.1.0",
+      "paths": {
+        "/addGuest": {
+          "post": {
+            "operationId": "addGuest",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "adminAccessRequested": {},
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "deviceInfo": {},
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "rsvp": {
+                                "$ref": "#/components/schemas/RsvpDraft"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "rsvp"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/AddGuestCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/addInvitedGuestsAsHost": {
+          "post": {
+            "operationId": "addInvitedGuestsAsHost",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "emailsToInvite": {
+                                "items": {
+                                  "additionalProperties": true,
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "invitationMessage": {
+                                "type": "string"
+                              },
+                              "otherMutualsCount": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "phoneContactsToInvite": {
+                                "items": {
+                                  "additionalProperties": true,
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "userIdsToInvite": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "userIdsToInvite",
+                              "invitationMessage",
+                              "otherMutualsCount",
+                              "phoneContactsToInvite",
+                              "emailsToInvite"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/cancelEvent": {
+          "post": {
+            "operationId": "cancelEvent",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "deviceInfo": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "cancellationMessage": {
+                                "type": "string"
+                              },
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "shouldSkipNotifyGuests": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "cancellationMessage",
+                              "shouldSkipNotifyGuests"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "userId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CancelEventCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/createCohostRequest": {
+          "post": {
+            "operationId": "createCohostRequest",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "targetUserId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "targetUserId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/createEvent": {
+          "post": {
+            "operationId": "createEvent",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "deviceInfo": {
+                            "additionalProperties": true,
+                            "type": "object"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "affiliateId": {
+                                "type": "string"
+                              },
+                              "cohostIds": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "event": {
+                                "$ref": "#/components/schemas/EventDraft"
+                              },
+                              "promoCodes": {},
+                              "ticketTypes": {}
+                            },
+                            "required": [
+                              "event",
+                              "cohostIds"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "userId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CreateEventCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/createTextBlast": {
+          "post": {
+            "operationId": "createTextBlast",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": true,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "additionalProperties": true,
+                                "properties": {
+                                  "images": {
+                                    "items": {
+                                      "additionalProperties": true,
+                                      "type": "object"
+                                    },
+                                    "maxItems": 1,
+                                    "type": "array"
+                                  },
+                                  "showOnEventPage": {
+                                    "type": "boolean"
+                                  },
+                                  "text": {
+                                    "maxLength": 480,
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "to",
+                                  "showOnEventPage"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "message"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/deleteCohostRequest": {
+          "post": {
+            "operationId": "deleteCohostRequest",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "targetUserId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "targetUserId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/generateEventCohostLink": {
+          "post": {
+            "operationId": "generateEventCohostLink",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/GenerateEventCohostLinkCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getContacts": {
+          "post": {
+            "operationId": "getContacts",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "paging": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "cursor": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "maxResults": {
+                                "const": 1000,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "maxResults",
+                              "cursor"
+                            ],
+                            "type": "object"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "useAuthUser": {
+                                "type": "boolean"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId",
+                          "paging"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/GetContactsResponse"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableUnauthenticatedError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getCurrentGuest": {
+          "post": {
+            "operationId": "getCurrentGuest",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/GetCurrentGuestResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getEventInfo": {
+          "post": {
+            "operationId": "getEventInfo",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/GetEventInfoResponse"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableNotFoundError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getGuests": {
+          "post": {
+            "operationId": "getGuests",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "paging": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "cursor": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "maxResults": {
+                                "const": 500,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "maxResults",
+                              "cursor"
+                            ],
+                            "type": "object"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "includeInvitedGuests": {
+                                "const": true,
+                                "type": "boolean"
+                              },
+                              "password": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "includeInvitedGuests"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId",
+                          "paging"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/GetGuestsResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getLoginToken": {
+          "post": {
+            "operationId": "getLoginToken",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "affiliateId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "authCode": {
+                                "type": "string"
+                              },
+                              "phoneNumber": {
+                                "type": "string"
+                              },
+                              "utms": {
+                                "additionalProperties": true,
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "phoneNumber",
+                              "authCode",
+                              "affiliateId",
+                              "utms"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/LoginTokenResponse"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableAuthError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            }
+          }
+        },
+        "/getMyPastEventsForHomePage": {
+          "post": {
+            "operationId": "getMyPastEventsForHomePage",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {},
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "properties": {
+                        "result": {
+                          "properties": {
+                            "data": {
+                              "properties": {
+                                "pastEvents": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/HomePageEvent"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "pastEvents"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "data"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "result"
+                      ],
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/getMyUpcomingEventsForHomePage": {
+          "post": {
+            "operationId": "getMyUpcomingEventsForHomePage",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {},
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "properties": {
+                        "result": {
+                          "properties": {
+                            "data": {
+                              "properties": {
+                                "upcomingEvents": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/HomePageEvent"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "upcomingEvents"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "data"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "result"
+                      ],
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/markEventInterest": {
+          "post": {
+            "operationId": "markEventInterest",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "adminAccessRequested": {},
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "deviceInfo": {},
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "interested": {
+                                "type": "boolean"
+                              },
+                              "source": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "interested"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/MarkEventInterestCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/posters.json": {
+          "get": {
+            "operationId": "getPosterCatalog",
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/Poster"
+                      },
+                      "type": "array"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "servers": [
+              {
+                "url": "https://assets.getpartiful.com"
+              }
+            ]
+          }
+        },
+        "/removeCohost": {
+          "post": {
+            "operationId": "removeCohost",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              },
+                              "targetUserId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId",
+                              "targetUserId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/revokeEventCohostLink": {
+          "post": {
+            "operationId": "revokeEventCohostLink",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "eventId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventId"
+                            ],
+                            "type": "object"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/CallableCompletionResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ]
+          }
+        },
+        "/sendAuthCodeTrusted": {
+          "post": {
+            "operationId": "sendAuthCodeTrusted",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amplitudeDeviceId": {
+                            "type": "string"
+                          },
+                          "amplitudeSessionId": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "params": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "captchaToken": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "channelPreference": {
+                                "enum": [
+                                  "sms"
+                                ],
+                                "type": "string"
+                              },
+                              "displayName": {
+                                "type": "string"
+                              },
+                              "phoneNumber": {
+                                "type": "string"
+                              },
+                              "silent": {
+                                "type": "boolean"
+                              },
+                              "useAppleBusinessUpdates": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "displayName",
+                              "phoneNumber",
+                              "silent",
+                              "channelPreference",
+                              "captchaToken",
+                              "useAppleBusinessUpdates"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "params",
+                          "amplitudeDeviceId"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {},
+              "default": {}
+            }
+          }
+        },
+        "/uploadPhoto": {
+          "post": {
+            "operationId": "uploadEventPhoto",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "uploadType",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "event_poster"
+                  ],
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "multipart/form-data": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "file": {
+                        "format": "binary",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "file"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://us-central1-getpartiful.cloudfunctions.net"
+              }
+            ]
+          }
+        },
+        "/v1/accounts:lookup": {
+          "post": {
+            "operationId": "lookupFirebaseUser",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "Referer",
+                "required": true,
+                "schema": {
+                  "const": "https://partiful.com/",
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "idToken": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "idToken"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirebaseLookupResponse"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirebaseValidationError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseApiKey": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://identitytoolkit.googleapis.com"
+              }
+            ]
+          }
+        },
+        "/v1/accounts:signInWithCustomToken": {
+          "post": {
+            "operationId": "signInWithCustomToken",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "Referer",
+                "required": true,
+                "schema": {
+                  "const": "https://partiful.com/",
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "returnSecureToken": {
+                        "type": "boolean"
+                      },
+                      "token": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "token",
+                      "returnSecureToken"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirebaseSignInResponse"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirebaseValidationError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseApiKey": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://identitytoolkit.googleapis.com"
+              }
+            ]
+          }
+        },
+        "/v1/projects/getpartiful/databases/(default)/documents/events/{eventId}": {
+          "get": {
+            "operationId": "firestoreGetEvent",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "eventId",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "403": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirestorePermissionDeniedError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://firestore.googleapis.com"
+              }
+            ]
+          },
+          "patch": {
+            "operationId": "firestorePatchEvent",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "eventId",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "explode": true,
+                "in": "query",
+                "name": "updateMask.fieldPaths",
+                "required": false,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "style": "form"
+              },
+              {
+                "in": "query",
+                "name": "currentDocument.exists",
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              {
+                "in": "query",
+                "name": "currentDocument.updateTime",
+                "required": false,
+                "schema": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FirestoreWriteDocument"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirestoreDocument"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://firestore.googleapis.com"
+              }
+            ]
+          }
+        },
+        "/v1/projects/getpartiful/databases/(default)/documents/events/{eventId}/guests/{guestId}": {
+          "get": {
+            "operationId": "firestoreGetGuest",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "eventId",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "in": "path",
+                "name": "guestId",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirestoreGuestDocument"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://firestore.googleapis.com"
+              }
+            ]
+          }
+        },
+        "/v1/projects/getpartiful/databases/(default)/documents/{collectionPath}": {
+          "get": {
+            "operationId": "firestoreListDocuments",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "collectionPath",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "in": "query",
+                "name": "pageSize",
+                "required": false,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              {
+                "in": "query",
+                "name": "pageToken",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirestoreListResponse"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseBearer": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://firestore.googleapis.com"
+              }
+            ]
+          }
+        },
+        "/v1/token": {
+          "post": {
+            "operationId": "refreshToken",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "Referer",
+                "required": true,
+                "schema": {
+                  "const": "https://partiful.com/",
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/x-www-form-urlencoded": {
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "grant_type": {
+                        "enum": [
+                          "refresh_token"
+                        ],
+                        "type": "string"
+                      },
+                      "refresh_token": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "grant_type",
+                      "refresh_token"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RefreshTokenResponse"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FirebaseTokenError"
+                    }
+                  }
+                }
+              },
+              "default": {}
+            },
+            "security": [
+              {
+                "firebaseApiKey": []
+              }
+            ],
+            "servers": [
+              {
+                "url": "https://securetoken.googleapis.com"
+              }
+            ]
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "https://api.partiful.com"
+        }
+      ]
+    }
+  },
+  "transport_revision": "2026-08-12.7"
+}
