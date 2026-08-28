@@ -47,6 +47,7 @@ ALLOWED_IMPORTS = {
         "internal/credentialstore",
         "internal/cli",
         "internal/mcp",
+        "internal/version",
     },
 }
 
