@@ -7,9 +7,11 @@ import datetime
 import hashlib
 import json
 import re
+import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 import sys
+import zipfile
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -86,6 +88,29 @@ def sbom_failures(sbom: object, manifest: dict[str, object]) -> list[str]:
     return []
 
 
+def archive_member_failures(archive: Path, target: object, binaries: object) -> list[str]:
+    """Require each target archive to contain only its declared executable names."""
+    target_name = getattr(target, "name", "")
+    target_os = getattr(target, "goos", "")
+    target_format = getattr(target, "archive_format", "")
+    suffix = ".exe" if target_os == "windows" else ""
+    expected = [f"partiful{suffix}", f"partiful-mcp{suffix}"]
+    if binaries != expected:
+        return [f"invalid binary matrix: {target_name}"]
+    try:
+        if target_format == "tar.gz":
+            with tarfile.open(archive, "r:gz") as package:
+                members = [member.name for member in package.getmembers()]
+        else:
+            with zipfile.ZipFile(archive) as package:
+                members = [member.filename for member in package.infolist()]
+    except (OSError, tarfile.TarError, zipfile.BadZipFile):
+        return [f"invalid archive members: {target_name}"]
+    if len(members) != len(expected) or set(members) != set(expected):
+        return [f"invalid archive members: {target_name}"]
+    return []
+
+
 def verify_release_directory(directory: Path, expected_revision: str | None = None) -> list[str]:
     failures: list[str] = []
     try:
@@ -104,8 +129,8 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
         archive = directory / str(item.get("archive", ""))
         if not archive.is_file() or item.get("sha256") != hashlib.sha256(archive.read_bytes()).hexdigest():
             failures.append(f"invalid archive evidence: {target.name}")
-        if item.get("binaries") != ["partiful", "partiful-mcp"]:
-            failures.append(f"invalid binary matrix: {target.name}")
+            continue
+        failures.extend(archive_member_failures(archive, target, item.get("binaries")))
     checksum_path = directory / "checksums.txt"
     if not checksum_path.is_file():
         failures.append("missing checksums.txt")

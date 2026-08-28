@@ -100,6 +100,11 @@ def archive_target(source: Path, destination: Path, target: Target, epoch: int) 
         _zip_archive(source, destination, epoch)
 
 
+def archive_binary_names(target: Target) -> list[str]:
+    suffix = ".exe" if target.goos == "windows" else ""
+    return [f"{binary}{suffix}" for binary in BINARY_NAMES]
+
+
 def release_digest(directory: Path) -> dict[str, str]:
     return {path.relative_to(directory).as_posix(): sha256(path) for path in sorted(directory.rglob("*")) if path.is_file()}
 
@@ -158,7 +163,7 @@ def build_release(*, output: Path, version: str, source_date_epoch: int, source_
             extension = "tar.gz" if target.archive_format == "tar.gz" else "zip"
             filename = f"partiful_{version}_{target.name}.{extension}"
             archive_target(target_stage, output / filename, target, source_date_epoch)
-            archives.append({"target": target.name, "archive": filename, "binaries": list(BINARY_NAMES), "sha256": sha256(output / filename)})
+            archives.append({"target": target.name, "archive": filename, "binaries": archive_binary_names(target), "sha256": sha256(output / filename)})
     metadata = {"version": version, "source_revision": source_revision, "source_date_epoch": source_date_epoch, "toolchain": _toolchain_metadata(), "targets": archives}
     (output / "manifest.json").write_text(json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n")
     sbom = spdx_document(version=version, source_revision=source_revision, source_date_epoch=source_date_epoch)

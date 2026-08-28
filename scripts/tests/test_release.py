@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 from pathlib import Path
 import sys
 import subprocess
+import tarfile
 import tempfile
 import unittest
+import warnings
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -37,7 +41,9 @@ class ReleaseBuildTest(unittest.TestCase):
                 sorted(target.name for target in build_release.TARGETS),
             )
             for item in manifest["targets"]:
-                self.assertEqual(item["binaries"], ["partiful", "partiful-mcp"])
+                target = next(target for target in build_release.TARGETS if target.name == item["target"])
+                suffix = ".exe" if target.goos == "windows" else ""
+                self.assertEqual(item["binaries"], [f"partiful{suffix}", f"partiful-mcp{suffix}"])
                 self.assertTrue((output / item["archive"]).is_file())
                 self.assertRegex(item["sha256"], r"^[0-9a-f]{64}$")
 
@@ -222,6 +228,25 @@ class PublicationGateTest(unittest.TestCase):
             (output / "checksums.txt").write_text(checksums)
             self.assertIn("invalid checksum manifest", verify_release.verify_release_directory(output))
 
+    def test_release_verifier_rejects_archives_with_invalid_binary_members(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            for target in (build_release.TARGETS[0], build_release.TARGETS[-1]):
+                suffix = ".exe" if target.goos == "windows" else ""
+                expected = [f"partiful{suffix}", f"partiful-mcp{suffix}"]
+                target_cases = {
+                    "missing": expected[:1],
+                    "extra": [*expected, "unexpected"],
+                    "duplicate": [*expected, expected[0]],
+                    "path-escaping": [*expected, "../partiful"],
+                }
+                for name, members in target_cases.items():
+                    with self.subTest(target=target.name, case=name):
+                        output = self._fixture_release(Path(temporary))
+                        self._replace_archive_members(output, target, members)
+                        self.assertTrue(
+                            any(failure.startswith("invalid archive members") for failure in verify_release.verify_release_directory(output))
+                        )
+
     def test_release_workflow_checks_out_the_selected_tag_commit_before_verification(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         selection = workflow.index("- name: Select immutable release inputs")
@@ -243,6 +268,35 @@ class PublicationGateTest(unittest.TestCase):
             smoke=lambda *_: None,
         )
         return output
+
+    def _replace_archive_members(self, output: Path, target: build_release.Target, members: list[str]) -> None:
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        item = next(item for item in manifest["targets"] if item["target"] == target.name)
+        archive = output / item["archive"]
+        if target.archive_format == "tar.gz":
+            with tarfile.open(archive, "w:gz") as rewritten:
+                for member in members:
+                    payload = member.encode()
+                    info = tarfile.TarInfo(member)
+                    info.size = len(payload)
+                    rewritten.addfile(info, io.BytesIO(payload))
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                with zipfile.ZipFile(archive, "w") as rewritten:
+                    for member in members:
+                        rewritten.writestr(member, member)
+        item["sha256"] = hashlib.sha256(archive.read_bytes()).hexdigest()
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+        hashes = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in [archive, manifest_path, output / "sbom.spdx.json"]
+        }
+        (output / "checksums.txt").write_text("\n".join(
+            f"{hashes.get(line.split('  ', 1)[1], line.split('  ', 1)[0])}  {line.split('  ', 1)[1]}"
+            for line in (output / "checksums.txt").read_text().splitlines()
+        ) + "\n")
 
 
 if __name__ == "__main__":
