@@ -276,6 +276,9 @@ func (server *Server) call(ctx context.Context, output io.Writer, request reques
 		return
 	}
 	result, err := server.invoker.Invoke(ctx, definition.Operation, input)
+	if ctx.Err() != nil {
+		err = ctx.Err()
+	}
 	if err != nil {
 		server.writeToolError(output, request.ID, err)
 		return

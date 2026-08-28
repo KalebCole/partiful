@@ -207,7 +207,7 @@ func TestCancellationByRequestIDLeavesServerHealthy(t *testing.T) {
 		if operation == domain.OperationListPosters {
 			once.Do(func() { close(started) })
 			<-ctx.Done()
-			return nil, ctx.Err()
+			return nil, errors.New("transport masked cancellation")
 		}
 		if operation == domain.OperationGetVersion {
 			return domain.VersionResult{CLIVersion: "healthy"}, nil
@@ -236,11 +236,16 @@ func TestCancellationByRequestIDLeavesServerHealthy(t *testing.T) {
 	}
 	byID := responseMap(decodeResponses(t, stdout.Bytes()))
 	var cancelled struct {
-		IsError bool `json:"isError"`
+		IsError           bool `json:"isError"`
+		StructuredContent struct {
+			Error struct {
+				Code string `json:"code"`
+			} `json:"error"`
+		} `json:"structuredContent"`
 	}
 	mustUnmarshal(t, byID["7"].Result, &cancelled)
-	if !cancelled.IsError {
-		t.Fatal("cancelled call was not a tool error")
+	if !cancelled.IsError || cancelled.StructuredContent.Error.Code != "REQUEST_CANCELLED" {
+		t.Fatalf("cancelled call = %#v, want REQUEST_CANCELLED tool error", cancelled)
 	}
 	var healthy struct {
 		StructuredContent struct {

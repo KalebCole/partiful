@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	lockTimeout = 10 * time.Second
+	lockTimeout            = 10 * time.Second
+	credentialProbeTimeout = 2 * time.Second
 )
 
 type cliConfig struct {
@@ -192,13 +193,12 @@ func build(ctx context.Context, root string, selected auth.CredentialStore, diag
 
 	fileStore := credentialstore.NewFileStore(root)
 	osStore, osErr := credentialstore.DefaultOSStore()
-	selector := credentialstore.Selector{Root: root, File: fileStore, Diagnostics: diagnosticWriter{diagnostics}}
+	var platformStore auth.CredentialStore
 	if osErr == nil {
-		selector.OS = osStore
-		selector.Probe = func(context.Context) error { return nil }
+		platformStore = osStore
 	}
 	if selected == nil {
-		selected, err = selector.Select(ctx)
+		selected, err = selectCredentialStore(ctx, root, platformStore, diagnostics)
 		if err != nil {
 			return graph{}, fmt.Errorf("compose credentials: %w", err)
 		}
@@ -211,7 +211,7 @@ func build(ctx context.Context, root string, selected auth.CredentialStore, diag
 	provider := auth.NewProvider(auth.ProviderConfig{
 		Store: selected, CleanupStores: cleanup, Transport: firebaseauth.BlockedTransport{},
 		Coordinator: credentialstore.NewFileCoordinator(root, lockTimeout), Clock: clock,
-		Diagnostics: diagnosticWriter{diagnostics}, Gates: gates, ClearBackendMarker: selector.ClearMarker,
+		Diagnostics: diagnosticWriter{diagnostics}, Gates: gates, ClearBackendMarker: (credentialstore.Selector{Root: root}).ClearMarker,
 	})
 	credentials := credentials{provider: provider, store: selected, clock: clock}
 	service := app.NewService(catalog, gates)
@@ -248,6 +248,24 @@ func build(ctx context.Context, root string, selected auth.CredentialStore, diag
 		return graph{}, err
 	}
 	return graph{catalog: catalog, service: service}, nil
+}
+
+func selectCredentialStore(ctx context.Context, root string, osStore auth.CredentialStore, diagnostics io.Writer) (auth.CredentialStore, error) {
+	selector := credentialstore.Selector{
+		Root:        root,
+		OS:          osStore,
+		File:        credentialstore.NewFileStore(root),
+		Diagnostics: diagnosticWriter{diagnostics},
+	}
+	if osStore != nil {
+		selector.Probe = func(ctx context.Context) error {
+			bounded, cancel := context.WithTimeout(ctx, credentialProbeTimeout)
+			defer cancel()
+			_, err := osStore.Load(bounded, auth.SlotA)
+			return err
+		}
+	}
+	return selector.Select(ctx)
 }
 
 func dataRoot(goos string, userHomeDir func() (string, error), getenv func(string) string) (string, error) {
