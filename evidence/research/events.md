@@ -111,11 +111,11 @@ omits `password` when the getter returns `undefined`.
 
 Sources:
 
-[1] https://partiful.com/login — Partiful login seed
-[2] https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H — Partiful build manifest
-[3] https://partiful.com/_next/static/chunks/pages/e/%5Bevent%5D-b93466c92a2a3b3d.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H — Partiful `/e/[event]` page asset
-[4] https://partiful.com/_next/static/chunks/4729-2818558cb3b09617.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H — Partiful `getEventInfo` dependency asset
-[5] https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H — Partiful shared `_app` asset
+[1] https://partiful.com/login, Partiful login seed
+[2] https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful build manifest
+[3] https://partiful.com/_next/static/chunks/pages/e/%5Bevent%5D-b93466c92a2a3b3d.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful `/e/[event]` page asset
+[4] https://partiful.com/_next/static/chunks/4729-2818558cb3b09617.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful `getEventInfo` dependency asset
+[5] https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful shared `_app` asset
 
 ## Event read: One-response event-list calls
 
