@@ -150,7 +150,7 @@
   },
   "command_revision": "1",
   "evidence": {
-    "sha256": "39d8751eb9614febaa93bea49e27785fcc0de32a76b6b57dc461973002eac5a5"
+    "sha256": "c69fd6ab94de237e130a012920306a298dca6bf7d1c28881e9c267bbeaec86bf"
   },
   "format": 1,
   "transport": {
@@ -3062,12 +3062,20 @@
                       "data": {
                         "additionalProperties": false,
                         "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
                           "amplitudeDeviceId": {
                             "type": "string"
                           },
                           "amplitudeSessionId": {
                             "format": "int64",
                             "type": "integer"
+                          },
+                          "deviceInfo": {
+                            "additionalProperties": true,
+                            "type": "object"
                           },
                           "params": {
                             "additionalProperties": false,
@@ -3083,7 +3091,7 @@
                         },
                         "required": [
                           "params",
-                          "amplitudeDeviceId"
+                          "userId"
                         ],
                         "type": "object"
                       }
@@ -3155,12 +3163,20 @@
                       "data": {
                         "additionalProperties": false,
                         "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
                           "amplitudeDeviceId": {
                             "type": "string"
                           },
                           "amplitudeSessionId": {
                             "format": "int64",
                             "type": "integer"
+                          },
+                          "deviceInfo": {
+                            "additionalProperties": true,
+                            "type": "object"
                           },
                           "params": {
                             "additionalProperties": false,
@@ -3176,7 +3192,7 @@
                         },
                         "required": [
                           "params",
-                          "amplitudeDeviceId"
+                          "userId"
                         ],
                         "type": "object"
                       }
@@ -4050,5 +4066,5 @@
       ]
     }
   },
-  "transport_revision": "2026-08-12.7"
+  "transport_revision": "2026-08-28.1"
 }

@@ -40,7 +40,7 @@ This request classification was rechecked without authentication on August 28,
 `XoD6YZ4QlKDKpKvBo-WXS` and deployment query
 `dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H`. The checked sources were:
 
-- [`/events`](https://partiful.com/events), SHA-256
+- [`/events`](https://partiful.com/events?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H), SHA-256
   `379cb4ae953c7e4c005ec2d7b11e1a612f8d630d2d71005e539942639b7a9a53`;
 - [build manifest](https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H),
   SHA-256
@@ -101,7 +101,7 @@ access is exactly true. The Firebase encoder represents an unavailable
 For both operations, `data.params` is required and exactly empty, `data.userId`
 is required and nullable, and the four shared metadata properties are
 optional under the conditions above. `paging` and every other property are
-omitted. The callable SDK sends the body to
+omitted. Unknown fields are rejected by the reviewed schemas. The callable SDK sends the body to
 `https://api.partiful.com/<operation>` with JSON content type. Authorization,
 messaging, and App Check headers are independent SDK context and are sent only
 when the corresponding token exists. No live callable request was made during
