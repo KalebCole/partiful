@@ -33,6 +33,90 @@ f06c1b0d78258ebb02ad6a95152ef4f9628c25c7ab54720180ed43db97e9f1fa
 Public assets are research evidence. They do not establish unobserved server
 statuses, ordering, limits, pagination, or response-field presence.
 
+## Event read: Exact `getEventInfo` request
+
+This request classification was refreshed without authentication on August 28,
+2026. The bounded probe fetched the public login seed and its build
+manifest.[1][2] It fetched the `/e/[event]` page asset and route dependencies in
+manifest order through the first dependency that defines `getEventInfo`.[3][4]
+It also fetched the shared `_app` asset.[5]
+It did not use an event ID, call a callable endpoint, read account data, or make
+a mutation.
+
+The retained file metadata is:
+
+| Asset | Bytes | SHA-256 |
+|---|---:|---|
+| login seed [1] | 32,147 | `4d0adffa7351fb719fcf6bf61847a3055956cc0ad416eb5fcc11dff14219d9ec` |
+| build manifest [2] | 11,750 | `7df0479beab97444f9619534ef2903e89a7a690601b758523b6550fa9713e2ff` |
+| `/e/[event]` page [3] | 21,231 | `cafa80c3d70468b344305728814c3f1d99f466e5d86048064f939a712fd6cec4` |
+| defining dependency [4] | 41,179 | `c1cd93de4cd1bfbd07672df7f8c85bc743b0c13ce3ea37ac4cc705e483720baa` |
+| shared `_app` [5] | 2,371,473 | `73b988c55401f68c265ac6b223b85ceae67f3be76efea2d56fd10333b7920bbf` |
+
+Defining dependency module `65854` constructs this callable argument:
+
+```js
+async function getEventInfo(
+  eventId,
+  { useCache, password, currentAppVersion } = {},
+) {
+  return (
+    await call("getEventInfo", {
+      params: { eventId, useCache, password, currentAppVersion },
+    })
+  ).data;
+}
+```
+
+Shared `_app` module `95722` adds `userId` unconditionally, adds
+`amplitudeDeviceId` and `amplitudeSessionId` only when their stored values are
+non-null, and adds `adminAccessRequested` only when it is exactly `true`. It
+then deletes each direct `params` property whose value is `undefined`. Explicit
+`null` values remain. The module has no exported setter for its private
+`deviceInfo` value, and this caller does not supply `deviceInfo`, so the current
+web construction omits it.
+
+Bundled Firebase Functions SDK module `68997`, version `0.12.3`, recursively
+encodes an unset or null value as JSON `null`, wraps the encoded callable
+argument in top-level `data`, and serializes that object as the POST body. The
+exact body family is therefore:
+
+```text
+{
+  "data": {
+    "params": {
+      "eventId": <event ID>,
+      "useCache": <present only when defined>,
+      "password": <present only when defined>,
+      "currentAppVersion": <present only when defined>
+    },
+    "userId": <string or null>,
+    "amplitudeDeviceId": <present only when initialized and non-null>,
+    "amplitudeSessionId": <present only when initialized and non-null>,
+    "adminAccessRequested": <present only as true>
+  }
+}
+```
+
+`data`, `data.params`, `data.params.eventId`, and `data.userId` are always
+represented. `paging`, `deviceInfo`, and every other body member are omitted.
+The evidence establishes the optional members' presence rules, but it does not
+constrain the full JSON value domain accepted by the dynamically typed helper.
+
+The current `/e/[event]` composition passes `password` from `getPassword` and a
+provider `currentAppVersion` value to the helper, but it does not pass
+`useCache`. That page supplies no `currentAppVersion` prop to the provider, so
+the ordinary page call omits both `useCache` and `currentAppVersion`; it also
+omits `password` when the getter returns `undefined`.
+
+Sources:
+
+[1] https://partiful.com/login, Partiful login seed
+[2] https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful build manifest
+[3] https://partiful.com/_next/static/chunks/pages/e/%5Bevent%5D-b93466c92a2a3b3d.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful `/e/[event]` page asset
+[4] https://partiful.com/_next/static/chunks/4729-2818558cb3b09617.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful `getEventInfo` dependency asset
+[5] https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H, Partiful shared `_app` asset
+
 ## Event read: One-response event-list calls
 
 This request classification was rechecked without authentication on August 28,
