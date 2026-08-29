@@ -176,14 +176,22 @@ WORKER_PROFILE_STATUS_CONTEXT = "partiful/live-worker-profiles"
 
 def worker_profile_status_failures(payload: object, expected_revision: str) -> list[str]:
     """Require one successful native GitHub status for the exact release SHA."""
-    if not isinstance(payload, dict):
+    raw_pages = payload if isinstance(payload, list) else [payload]
+    if not raw_pages or not all(isinstance(page, dict) for page in raw_pages):
         return ["invalid worker-profile status"]
-    if payload.get("sha") != expected_revision:
+    pages = [page for page in raw_pages if isinstance(page, dict)]
+    if any(page.get("sha") != expected_revision for page in pages):
         return ["worker-profile status SHA mismatch"]
-    statuses = payload.get("statuses")
-    if not isinstance(statuses, list):
+    raw_status_pages = [page.get("statuses") for page in pages]
+    if not all(isinstance(statuses, list) for statuses in raw_status_pages):
         return ["invalid worker-profile status"]
-    matches = [status for status in statuses if isinstance(status, dict) and status.get("context") == WORKER_PROFILE_STATUS_CONTEXT]
+    status_pages = [statuses for statuses in raw_status_pages if isinstance(statuses, list)]
+    matches = [
+        status
+        for statuses in status_pages
+        for status in statuses
+        if isinstance(status, dict) and status.get("context") == WORKER_PROFILE_STATUS_CONTEXT
+    ]
     if not matches:
         return ["worker-profile status is missing"]
     if len(matches) != 1:

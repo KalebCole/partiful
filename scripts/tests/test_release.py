@@ -227,6 +227,24 @@ class PublicationGateTest(unittest.TestCase):
             with self.subTest(case=name):
                 self.assertIn(failure, verify_release.worker_profile_status_failures(status_payload, revision))
 
+        self.assertEqual(
+            verify_release.worker_profile_status_failures(
+                [
+                    payload([{"context": "other", "state": "success"}]),
+                    payload([expected]),
+                ],
+                revision,
+            ),
+            [],
+        )
+        self.assertEqual(
+            verify_release.worker_profile_status_failures(
+                [payload([]), payload([expected], "b" * 40)],
+                revision,
+            ),
+            ["worker-profile status SHA mismatch"],
+        )
+
     def test_release_workflow_queries_native_status_for_the_build_revision_and_never_runs_live_profiles_hosted(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         build = workflow[workflow.index("build:"):workflow.index("native-smoke:")]
@@ -234,6 +252,7 @@ class PublicationGateTest(unittest.TestCase):
         self.assertNotIn("verify_implementation_worker_profiles.py", build)
         self.assertIn("REVISION: ${{ needs.build.outputs.revision }}", publish)
         self.assertIn('"repos/${GITHUB_REPOSITORY}/commits/${REVISION}/status?per_page=100"', publish)
+        self.assertIn("gh api --paginate --slurp", publish)
         self.assertIn("--worker-profile-status-file", publish)
         self.assertNotIn("--worker-profiles-passed", workflow)
 
