@@ -9,8 +9,17 @@ GitHub issue requirements, dependencies, allowed files, verification commands, a
 - **Refactor:** establish unchanged behavior first and do not mix new behavior.
 - **Evidence:** conduct bounded, credential-free public/repository investigation, redact observations, and allow a reviewed `unsupported` conclusion. No live mutation.
 
-## Handoff and native review
+## Delivery team and handoff
 
-Record RED and GREEN commands/outcomes, focused and full verification, paths, exact PR head SHA, and handoff URL; read the PR and handoff back. Native-request `code-reviewer` on the same card. The reviewer exact-SHA checks out the PR and writes `## Implementation review` with `Verdict: APPROVE|REQUEST_CHANGES`, `Commit: <40-sha>`, `RED:`, `GREEN:`, and all category lines `Category-<name>: PASS|FAIL` for: specification, correctness, domain_model, test_quality, edge_cases, security_privacy, maintainability, domain_adherence, and evidence_rigor. Before posting, the active reviewer run signs the exact body with `python3 scripts/deterministic_merge_gate.py --issue <N> --sign-review-file <unsigned-file> > <signed-file>`. Post the signed file unchanged. The merge gate rejects unsigned reviews and any body changed after signing. Request changes returns the same card to `coding-worker` with evidence; three reviews hard-block. Approval calls the deterministic gate.
+The verified delivery team has two roles:
+
+- `project-manager` coordinates the work and verifies the result.
+- `coding-worker` builds, tests, self-reviews, writes documentation, and performs repository branch and pull request work.
+
+No separate reviewer, implementer, evidence, or integrator profile is required. The `coding-worker` capability contract is exactly: file, terminal, skills, todo, clarify, session_search, delegation, web, and browser.
+
+For repository branch and pull request work, `coding-worker` may declare `GH_TOKEN` and `GITHUB_TOKEN`. Other `coding-worker` environment names are rejected, including `NOTION_API_KEY`, without printing their values.
+
+For this profile, `terminal.auto_source_bashrc` is false, `terminal.env_passthrough` is empty, and `terminal.shell_init_files` contains only that profile directory's `shell/profile-env.sh`.
 
 Escalate only contradictory requirements, safety choices, or genuinely unresolved behavior. Never escalate an architectural boundary. Never seek, use, recover, or create credentials or mutate a live Partiful account.
