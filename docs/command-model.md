@@ -183,7 +183,7 @@ CLI and MCP input: none. Deletes the active account credentials. Success:
 CLI and MCP input: none. Success:
 
 ```json
-{"cli_version":"0.1.0","command_contract_revision":"1","transport_contract_revision":"2026-08-12.7"}
+{"cli_version":"0.1.0","command_contract_revision":"1","transport_contract_revision":"2026-08-28.1"}
 ```
 
 #### `schema`

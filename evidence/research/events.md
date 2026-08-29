@@ -35,9 +35,31 @@ statuses, ordering, limits, pagination, or response-field presence.
 
 ## Event read: One-response event-list calls
 
-The `/events` asset names the two callable operations and sends empty
-`params`. It reads `response.data`, then reads `upcomingEvents` or
-`pastEvents`; it sends no paging member.
+This request classification was rechecked without authentication on August 28,
+2026. The public `/events` page supplied build ID
+`XoD6YZ4QlKDKpKvBo-WXS` and deployment query
+`dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H`. The checked sources were:
+
+- [`/events`](https://partiful.com/events?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H), SHA-256
+  `379cb4ae953c7e4c005ec2d7b11e1a612f8d630d2d71005e539942639b7a9a53`;
+- [build manifest](https://partiful.com/_next/static/XoD6YZ4QlKDKpKvBo-WXS/_buildManifest.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H),
+  SHA-256
+  `7df0479beab97444f9619534ef2903e89a7a690601b758523b6550fa9713e2ff`;
+- [shared event chunk](https://partiful.com/_next/static/chunks/7066-2c910b2d235d0667.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H),
+  SHA-256
+  `3c235f1486b743d84ca1145b8f2a220d9950932558e1a64ebdfa5df47eca83b4`;
+- [`/events` page chunk](https://partiful.com/_next/static/chunks/pages/events-62f501908354b79f.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H),
+  SHA-256
+  `9fb1a887af52127bcf0e8b85935f0bc07c052c9bffe7741b436a9e11817c5116`;
+  and
+- [shared `_app` chunk](https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H),
+  SHA-256
+  `73b988c55401f68c265ac6b223b85ceae67f3be76efea2d56fd10333b7920bbf`.
+
+The page asset reported `Last-Modified: Fri, 28 Aug 2026 16:13:30 GMT`.
+The `/events` assets name the two callable operations and send empty `params`.
+They read `response.data`, then read `upcomingEvents` or `pastEvents`; they send
+no `paging` member.
 
 Faithfully deminified modules `48666`, `17350`, `35932`, and `22920`:
 
@@ -64,6 +86,26 @@ async function getPastHomePageData() {
 The names, empty `params`, and absence of a paging argument agree with the
 dated one-response observations. The fallback objects are client behavior and
 do not describe a successful remote body.
+
+The shared callable wrapper merges each call argument with runtime metadata
+and then always assigns `userId`. It adds `deviceInfo` only when shared device
+state is non-null, `amplitudeDeviceId` and `amplitudeSessionId` only when each
+analytics value is non-null, and `adminAccessRequested: true` only when admin
+access is exactly true. The Firebase encoder represents an unavailable
+`userId` as JSON `null`. The exact minimum encoded body is therefore:
+
+```json
+{"data":{"params":{},"userId":null}}
+```
+
+For both operations, `data.params` is required and exactly empty, `data.userId`
+is required and nullable, and the four shared metadata properties are
+optional under the conditions above. `paging` and every other property are
+omitted. Unknown fields are rejected by the reviewed schemas. The callable SDK sends the body to
+`https://api.partiful.com/<operation>` with JSON content type. Authorization,
+messaging, and App Check headers are independent SDK context and are sent only
+when the corresponding token exists. No live callable request was made during
+this recheck.
 
 ## Event read: Event status
 
