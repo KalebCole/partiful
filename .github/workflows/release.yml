@@ -87,6 +87,10 @@ jobs:
             archive: partiful_${{ needs.build.outputs.version }}_windows_amd64.zip
     runs-on: ${{ matrix.runner }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.revision }}
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           name: release
@@ -97,57 +101,11 @@ jobs:
           ARCHIVE: ${{ matrix.archive }}
         run: |
           python3 - <<'PY'
-          import json, os, signal, subprocess, sys, tarfile, tempfile, zipfile
+          import os
           from pathlib import Path
-          archive = Path("release") / os.environ["ARCHIVE"]
-          with tempfile.TemporaryDirectory() as raw:
-              root = Path(raw)
-              if archive.suffix == ".zip":
-                  with zipfile.ZipFile(archive) as package: package.extractall(root)
-                  suffix = ".exe"
-              else:
-                  with tarfile.open(archive, "r:gz") as package: package.extractall(root)
-                  suffix = ""
-              cli, mcp = root / f"partiful{suffix}", root / f"partiful-mcp{suffix}"
-              environment = os.environ.copy()
-              environment["HOME"] = str(root / "home")
-              environment["XDG_DATA_HOME"] = str(root / "data")
-              environment["LOCALAPPDATA"] = str(root / "data")
-              version = subprocess.run([str(cli), "--version", "--json"], env=environment, text=True, capture_output=True, check=True)
-              fields = json.loads(version.stdout)
-              manifest_fields = json.loads((Path("release") / "manifest.json").read_text())["release_fields"]
-              if set(fields) != {"cli_version", "command_contract_revision", "transport_contract_revision"} or not all(fields.values()): raise RuntimeError("invalid version fields")
-              if fields != manifest_fields: raise RuntimeError("candidate CLI fields do not match release metadata")
-              if "Usage: partiful <command> [flags]" not in subprocess.run([str(cli), "--help"], env=environment, text=True, capture_output=True, check=True).stdout: raise RuntimeError("missing CLI help")
-              flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-              expected_tools = {"auth_status", "auth_logout", "events_list", "events_get", "events_create", "events_update", "events_cancel", "guests_list", "guests_invite", "rsvp_get", "rsvp_set", "contacts_list", "cohosts_invite", "cohosts_revoke_invite", "cohosts_remove", "cohosts_link_create", "cohosts_link_revoke", "blasts_send", "posters_list", "posters_search", "schema", "doctor", "version"}
-              def launch():
-                  return subprocess.Popen([str(mcp)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environment, text=True, creationflags=flags)
-              def request(process, identifier, method, params):
-                  assert process.stdin and process.stdout
-                  process.stdin.write(json.dumps({"jsonrpc":"2.0", "id":identifier, "method":method, "params":params}, separators=(",", ":")) + "\n"); process.stdin.flush()
-                  return json.loads(process.stdout.readline())
-              def initialize(process, identifier):
-                  response = request(process, identifier, "initialize", {"protocolVersion":"2025-06-18", "capabilities":{}, "clientInfo":{"name":"release-smoke", "version":"1"}})
-                  if response.get("result", {}).get("serverInfo", {}).get("name") != "partiful" or response.get("result", {}).get("serverInfo", {}).get("version") != fields["cli_version"]: raise RuntimeError("MCP version mismatch")
-              process = launch()
-              initialize(process, 1)
-              listed = request(process, 2, "tools/list", {})
-              tools = {tool.get("name") for tool in listed.get("result", {}).get("tools", [])}
-              if len(tools) != 23 or tools != expected_tools: raise RuntimeError("MCP tool inventory mismatch")
-              protected = request(process, 3, "tools/call", {"name":"events_cancel", "arguments":{"event_id":"release-smoke", "notify_guests":False}})
-              if protected.get("result", {}).get("structuredContent", {}).get("error", {}).get("type") != "auth.required": raise RuntimeError("credentialless MCP protection mismatch")
-              process.stdin.close(); process.wait(timeout=10)
-              if process.returncode or process.stderr.read(): raise RuntimeError("MCP EOF shutdown failed")
-              process = launch()
-              initialize(process, 4)
-              process.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT); process.wait(timeout=10)
-              if process.returncode or process.stderr.read(): raise RuntimeError("MCP SIGINT shutdown failed")
-              if os.name != "nt":
-                  process = launch()
-                  initialize(process, 5)
-                  process.send_signal(signal.SIGTERM); process.wait(timeout=10)
-                  if process.returncode or process.stderr.read(): raise RuntimeError("MCP SIGTERM shutdown failed")
+          from scripts.verify_release import smoke_native_archive
+
+          smoke_native_archive(Path("release") / os.environ["ARCHIVE"], Path("release") / "manifest.json")
           PY
 
   publish:

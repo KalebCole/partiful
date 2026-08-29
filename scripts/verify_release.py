@@ -6,17 +6,169 @@ import argparse
 import datetime
 import hashlib
 import json
+import os
 import re
+import signal
 import stat
+import subprocess
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 import sys
+import tempfile
 import zipfile
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.build_release import TARGETS, archive_name
+
+RELEASE_FIELD_NAMES = {"cli_version", "command_contract_revision", "transport_contract_revision"}
+
+
+def assert_release_fields(actual: object, expected: object, source: str) -> None:
+    """Require one exact, non-empty public release-field tuple."""
+    if (
+        not isinstance(actual, dict)
+        or set(actual) != RELEASE_FIELD_NAMES
+        or not all(isinstance(value, str) and value for value in actual.values())
+        or actual != expected
+    ):
+        raise RuntimeError(f"{source} fields do not match release metadata")
+
+
+def mcp_version_response_failures(response: object, expected_fields: object) -> list[str]:
+    """Return failures for one MCP version tool response."""
+    if not isinstance(response, dict):
+        return ["invalid MCP version response"]
+    result = response.get("result")
+    content = result.get("structuredContent") if isinstance(result, dict) else None
+    try:
+        assert_release_fields(content, expected_fields, "candidate MCP")
+    except RuntimeError as error:
+        return [str(error)]
+    return []
+
+
+def mcp_shutdown_failures(process: subprocess.Popen[str], stop_signal: int | None) -> list[str]:
+    """Stop an MCP process, drain both streams, and return shutdown failures."""
+    if stop_signal is None:
+        if process.stdin is None:
+            return ["MCP shutdown has no stdin"]
+        process.stdin.close()
+        process.stdin = None
+    else:
+        process.send_signal(stop_signal)
+    stdout, stderr = process.communicate(timeout=10)
+    failures = []
+    if process.returncode != 0:
+        failures.append("MCP shutdown returned a failure status")
+    if stdout:
+        failures.append("MCP shutdown wrote unexpected stdout")
+    if stderr:
+        failures.append("MCP shutdown wrote unexpected stderr")
+    return failures
+
+
+def drain_clean_shutdown(process: subprocess.Popen[str], label: str, stop_signal: int | None = None) -> None:
+    """Stop an MCP process, drain both streams, and reject all extra output."""
+    failures = mcp_shutdown_failures(process, stop_signal)
+    if failures:
+        raise RuntimeError(f"MCP {label} shutdown failed: {', '.join(failures)}")
+
+
+def smoke_native_archive(archive: Path, manifest_path: Path) -> None:
+    """Exercise the exact native CLI and MCP binaries from one release archive."""
+    manifest = json.loads(manifest_path.read_text())
+    expected_fields = manifest.get("release_fields")
+    assert_release_fields(expected_fields, expected_fields, "manifest")
+    with tempfile.TemporaryDirectory(prefix="partiful-native-smoke-") as raw:
+        root = Path(raw)
+        if archive.suffix == ".zip":
+            with zipfile.ZipFile(archive) as package:
+                package.extractall(root)
+            suffix = ".exe"
+        else:
+            with tarfile.open(archive, "r:gz") as package:
+                package.extractall(root)
+            suffix = ""
+        cli, mcp = root / f"partiful{suffix}", root / f"partiful-mcp{suffix}"
+        environment = os.environ.copy()
+        environment["HOME"] = str(root / "home")
+        environment["XDG_DATA_HOME"] = str(root / "data")
+        environment["LOCALAPPDATA"] = str(root / "data")
+
+        version = subprocess.run(
+            [str(cli), "--version", "--json"], env=environment, text=True, capture_output=True, check=False
+        )
+        if version.returncode != 0 or version.stderr:
+            raise RuntimeError("candidate CLI version failed")
+        assert_release_fields(json.loads(version.stdout), expected_fields, "candidate CLI")
+        help_result = subprocess.run([str(cli), "--help"], env=environment, text=True, capture_output=True, check=False)
+        if help_result.returncode != 0 or help_result.stderr or "Usage: partiful <command> [flags]" not in help_result.stdout:
+            raise RuntimeError("candidate CLI help failed")
+
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+
+        def launch() -> subprocess.Popen[str]:
+            return subprocess.Popen(
+                [str(mcp)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                env=environment, text=True, creationflags=flags,
+            )
+
+        def request(process: subprocess.Popen[str], identifier: int, method: str, params: dict[str, object]) -> dict[str, object]:
+            if process.stdin is None or process.stdout is None:
+                raise RuntimeError("MCP process streams are unavailable")
+            process.stdin.write(json.dumps({"jsonrpc": "2.0", "id": identifier, "method": method, "params": params}, separators=(",", ":")) + "\n")
+            process.stdin.flush()
+            response = json.loads(process.stdout.readline())
+            if response.get("id") != identifier or response.get("jsonrpc") != "2.0":
+                raise RuntimeError("invalid MCP response")
+            return response
+
+        def initialize(process: subprocess.Popen[str], identifier: int) -> None:
+            response = request(process, identifier, "initialize", {
+                "protocolVersion": "2025-06-18", "capabilities": {},
+                "clientInfo": {"name": "release-smoke", "version": "1"},
+            })
+            server_info = response.get("result", {})
+            server_info = server_info.get("serverInfo", {}) if isinstance(server_info, dict) else {}
+            if server_info.get("name") != "partiful" or server_info.get("version") != expected_fields["cli_version"]:
+                raise RuntimeError("MCP initialization version mismatch")
+
+        expected_tools = {
+            "auth_status", "auth_logout", "events_list", "events_get", "events_create", "events_update", "events_cancel",
+            "guests_list", "guests_invite", "rsvp_get", "rsvp_set", "contacts_list", "cohosts_invite",
+            "cohosts_revoke_invite", "cohosts_remove", "cohosts_link_create", "cohosts_link_revoke", "blasts_send",
+            "posters_list", "posters_search", "schema", "doctor", "version",
+        }
+        process = launch()
+        initialize(process, 1)
+        listed = request(process, 2, "tools/list", {})
+        listed_result = listed.get("result", {})
+        tools = {tool.get("name") for tool in listed_result.get("tools", [])} if isinstance(listed_result, dict) else set()
+        if len(tools) != 23 or tools != expected_tools:
+            raise RuntimeError("MCP tool inventory mismatch")
+        protected = request(process, 3, "tools/call", {
+            "name": "events_cancel", "arguments": {"event_id": "release-smoke", "notify_guests": False},
+        })
+        protected_result = protected.get("result", {})
+        protected_content = protected_result.get("structuredContent", {}) if isinstance(protected_result, dict) else {}
+        if protected_content.get("error", {}).get("type") != "auth.required":
+            raise RuntimeError("credentialless MCP protection mismatch")
+        mcp_version = request(process, 4, "tools/call", {"name": "version", "arguments": {}})
+        version_failures = mcp_version_response_failures(mcp_version, expected_fields)
+        if version_failures:
+            raise RuntimeError(version_failures[0])
+        drain_clean_shutdown(process, "EOF")
+
+        process = launch()
+        initialize(process, 5)
+        interrupt = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
+        drain_clean_shutdown(process, "SIGINT", interrupt)
+        if os.name != "nt":
+            process = launch()
+            initialize(process, 6)
+            drain_clean_shutdown(process, "SIGTERM", signal.SIGTERM)
 
 
 @dataclass(frozen=True)
@@ -143,8 +295,7 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
     if not isinstance(toolchain, dict) or set(toolchain) != {"go", "build_flags"} or not all(isinstance(value, str) and value for value in toolchain.values()):
         failures.append("invalid toolchain metadata")
     fields = manifest.get("release_fields")
-    required_field_names = {"cli_version", "command_contract_revision", "transport_contract_revision"}
-    if not isinstance(fields, dict) or set(fields) != required_field_names or fields.get("cli_version") != manifest.get("version") or not all(isinstance(value, str) and value for value in fields.values()):
+    if not isinstance(fields, dict) or set(fields) != RELEASE_FIELD_NAMES or fields.get("cli_version") != manifest.get("version") or not all(isinstance(value, str) and value for value in fields.values()):
         failures.append("invalid release fields")
     expected_targets = {target.name for target in TARGETS}
     if not isinstance(archives, list) or any(not isinstance(item, dict) for item in archives):

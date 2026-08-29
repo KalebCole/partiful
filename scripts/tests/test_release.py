@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import signal
 import sys
 import subprocess
 import tarfile
@@ -126,6 +127,47 @@ class ReleaseBuildTest(unittest.TestCase):
 
 
 class PublicationGateTest(unittest.TestCase):
+    def test_mcp_version_response_requires_exact_release_manifest_fields(self) -> None:
+        fields = {
+            "cli_version": "v1.2.3",
+            "command_contract_revision": "1",
+            "transport_contract_revision": "2026-08-12.7",
+        }
+        response = {"jsonrpc": "2.0", "id": 3, "result": {"structuredContent": fields}}
+        self.assertEqual(verify_release.mcp_version_response_failures(response, fields), [])
+        for name, value in fields.items():
+            with self.subTest(case=f"mismatched-{name}"):
+                mismatched = fields | {name: f"unexpected-{value}"}
+                response = {"jsonrpc": "2.0", "id": 3, "result": {"structuredContent": mismatched}}
+                self.assertTrue(verify_release.mcp_version_response_failures(response, fields))
+            with self.subTest(case=f"missing-{name}"):
+                missing = fields.copy()
+                del missing[name]
+                response = {"jsonrpc": "2.0", "id": 3, "result": {"structuredContent": missing}}
+                self.assertTrue(verify_release.mcp_version_response_failures(response, fields))
+        with self.subTest(case="extra-field"):
+            response = {"jsonrpc": "2.0", "id": 3, "result": {"structuredContent": fields | {"unexpected": "value"}}}
+            self.assertTrue(verify_release.mcp_version_response_failures(response, fields))
+
+    def test_mcp_shutdown_drains_pipes_for_eof_and_signals(self) -> None:
+        shutdowns = (("EOF", None), ("SIGINT", signal.SIGINT), ("SIGTERM", signal.SIGTERM))
+        for name, shutdown_signal in shutdowns:
+            with self.subTest(shutdown=name, case="clean"):
+                process = _FakeMCPProcess()
+                stdin = process.stdin
+                self.assertEqual(verify_release.mcp_shutdown_failures(process, shutdown_signal), [])
+                self.assertTrue(process.communicated)
+                self.assertEqual(process.signals, [] if shutdown_signal is None else [shutdown_signal])
+                self.assertEqual(stdin.closed, shutdown_signal is None)
+                self.assertTrue(process.stdout.read_called)
+                self.assertTrue(process.stderr.read_called)
+            for stream, output in (("stdout", "unexpected protocol frame\n"), ("stderr", "diagnostic\n")):
+                with self.subTest(shutdown=name, case=f"unexpected-{stream}"):
+                    process = _FakeMCPProcess(**{stream: output})
+                    self.assertTrue(verify_release.mcp_shutdown_failures(process, shutdown_signal))
+                    self.assertTrue(process.stdout.read_called)
+                    self.assertTrue(process.stderr.read_called)
+
     def test_release_verifier_runs_as_a_repository_script(self) -> None:
         completed = subprocess.run(
             [sys.executable, "scripts/verify_release.py", "--help"],
@@ -320,24 +362,14 @@ class PublicationGateTest(unittest.TestCase):
         section = workflow[native_smoke:publish]
         self.assertIn("runs-on: ${{ matrix.runner }}", section)
         self.assertIn("archive: partiful_${{ needs.build.outputs.version }}", section)
-        self.assertIn("--version", section)
-        self.assertIn("--help", section)
-        self.assertIn("initialize", section)
-        self.assertIn("SIGINT", section)
-        self.assertIn("SIGTERM", section)
+        self.assertIn("ref: ${{ needs.build.outputs.revision }}", section)
+        self.assertIn("from scripts.verify_release import smoke_native_archive", section)
+        self.assertIn('smoke_native_archive(Path("release") / os.environ["ARCHIVE"], Path("release") / "manifest.json")', section)
 
-    def test_release_workflow_waits_for_initialized_mcp_before_signal_smoke_and_checks_the_full_public_surface(self) -> None:
+    def test_release_workflow_uses_the_executable_native_smoke_once(self) -> None:
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         section = workflow[workflow.index("native-smoke:"):workflow.index("publish:")]
-        initialized = section.index('"initialize"')
-        sigint = section.index("SIGINT")
-        sigterm = section.index("SIGTERM")
-        self.assertLess(initialized, sigint)
-        self.assertLess(initialized, sigterm)
-        self.assertIn('"tools/list"', section)
-        self.assertIn("len(tools) != 23", section)
-        self.assertIn('serverInfo", {}).get("version") != fields["cli_version"]', section)
-        self.assertIn("stderr", section)
+        self.assertEqual(section.count("smoke_native_archive("), 1)
 
     def test_release_verifier_requires_source_metadata_and_toolchain_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -425,6 +457,37 @@ class PublicationGateTest(unittest.TestCase):
             f"{hashes.get(line.split('  ', 1)[1], line.split('  ', 1)[0])}  {line.split('  ', 1)[1]}"
             for line in (output / "SHA256SUMS").read_text().splitlines()
         ) + "\n")
+
+
+class _FakePipe:
+    def __init__(self, output: str = "") -> None:
+        self.closed = False
+        self.output = output
+        self.read_called = False
+
+    def close(self) -> None:
+        self.closed = True
+
+    def read(self) -> str:
+        self.read_called = True
+        return self.output
+
+
+class _FakeMCPProcess:
+    def __init__(self, stdout: str = "", stderr: str = "") -> None:
+        self.stdin = _FakePipe()
+        self.stdout = _FakePipe(stdout)
+        self.stderr = _FakePipe(stderr)
+        self.returncode = 0
+        self.signals: list[signal.Signals] = []
+        self.communicated = False
+
+    def send_signal(self, shutdown_signal: signal.Signals) -> None:
+        self.signals.append(shutdown_signal)
+
+    def communicate(self, timeout: float) -> tuple[str, str]:
+        self.communicated = True
+        return self.stdout.read(), self.stderr.read()
 
 
 if __name__ == "__main__":
