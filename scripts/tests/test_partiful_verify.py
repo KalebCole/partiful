@@ -249,8 +249,13 @@ class MutationWrapperTests(unittest.TestCase):
             FIXTURE_EXECUTABLE_GATES,
         )
         self.executable_manifest.start()
+        self.model_datetime = patch(
+            "scripts.partiful_verify.models.datetime", wraps=datetime
+        )
+        self.model_datetime.start().now.return_value = NOW
 
     def tearDown(self) -> None:
+        self.model_datetime.stop()
         self.executable_manifest.stop()
 
     def _wrapper(
