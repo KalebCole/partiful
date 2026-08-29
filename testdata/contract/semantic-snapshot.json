@@ -150,7 +150,7 @@
   },
   "command_revision": "1",
   "evidence": {
-    "sha256": "c69fd6ab94de237e130a012920306a298dca6bf7d1c28881e9c267bbeaec86bf"
+    "sha256": "652062c1e07308d2b21ac6a7c9fabdd219aec35f6d28ec7889f2ef0b597f3fb9"
   },
   "format": 1,
   "transport": {
@@ -2975,6 +2975,10 @@
                       "data": {
                         "additionalProperties": false,
                         "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
                           "amplitudeDeviceId": {
                             "type": "string"
                           },
@@ -2986,10 +2990,7 @@
                             "additionalProperties": false,
                             "properties": {
                               "affiliateId": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string"
                               },
                               "authCode": {
                                 "type": "string"
@@ -3005,15 +3006,16 @@
                             "required": [
                               "phoneNumber",
                               "authCode",
-                              "affiliateId",
                               "utms"
                             ],
                             "type": "object"
+                          },
+                          "userId": {
+                            "type": "string"
                           }
                         },
                         "required": [
-                          "params",
-                          "amplitudeDeviceId"
+                          "params"
                         ],
                         "type": "object"
                       }
@@ -3520,6 +3522,10 @@
                       "data": {
                         "additionalProperties": false,
                         "properties": {
+                          "adminAccessRequested": {
+                            "const": true,
+                            "type": "boolean"
+                          },
                           "amplitudeDeviceId": {
                             "type": "string"
                           },
@@ -3531,14 +3537,12 @@
                             "additionalProperties": false,
                             "properties": {
                               "captchaToken": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string"
                               },
                               "channelPreference": {
                                 "enum": [
-                                  "sms"
+                                  "SMS",
+                                  "WHATSAPP"
                                 ],
                                 "type": "string"
                               },
@@ -3550,25 +3554,21 @@
                               },
                               "silent": {
                                 "type": "boolean"
-                              },
-                              "useAppleBusinessUpdates": {
-                                "type": "boolean"
                               }
                             },
                             "required": [
                               "displayName",
                               "phoneNumber",
-                              "silent",
-                              "channelPreference",
-                              "captchaToken",
-                              "useAppleBusinessUpdates"
+                              "silent"
                             ],
                             "type": "object"
+                          },
+                          "userId": {
+                            "type": "string"
                           }
                         },
                         "required": [
-                          "params",
-                          "amplitudeDeviceId"
+                          "params"
                         ],
                         "type": "object"
                       }
@@ -3726,6 +3726,7 @@
                     "additionalProperties": false,
                     "properties": {
                       "returnSecureToken": {
+                        "const": true,
                         "type": "boolean"
                       },
                       "token": {
@@ -4066,5 +4067,5 @@
       ]
     }
   },
-  "transport_revision": "2026-08-28.1"
+  "transport_revision": "2026-08-28.2"
 }

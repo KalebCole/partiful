@@ -19,6 +19,73 @@ for Firebase sign-in, refresh, and lookup were recorded at
 `evidence/observations/auth-errors.json`. All probes observed
 only error responses.
 
+## Public authentication-request assets (captured 2026-08-28)
+
+On 2026-08-28, a credential-free fetch of the public
+[`/login`](https://partiful.com/login) page identified build
+`XoD6YZ4QlKDKpKvBo-WXS` and deployment
+`dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H`. The request classifications below come
+from these first-party public assets. The retained asset URLs, build ID,
+deployment ID, SHA-256 hashes, and byte counts record the 2026-08-28 capture.
+A recheck on 2026-08-29 returned HTTP `404`; these records do not make the
+assets fetchable now.
+
+| Asset | SHA-256 | Size | Relevant code |
+| --- | --- | ---: | --- |
+| [`pages/_app-08f1358a22e2f54b.js`](https://partiful.com/_next/static/chunks/pages/_app-08f1358a22e2f54b.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H) | `73b988c55401f68c265ac6b223b85ceae67f3be76efea2d56fd10333b7920bbf` | 2,371,473 bytes | modules `52039`, `95722`, and the bundled Firebase Auth client |
+| [`9552-9fd3f6ad8118c783.js`](https://partiful.com/_next/static/chunks/9552-9fd3f6ad8118c783.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H) | `348c61036bfdd097591f37a40f08b1c48265fdf45a7b3dd7812e8cff88252883` | 9,980 bytes | login form in the captured client |
+| [`9512-fcece14a3f9598b3.js`](https://partiful.com/_next/static/chunks/9512-fcece14a3f9598b3.js?dpl=dpl_4v9QFfUe3BMAxGHTkhoR7n5URH6H) | `8031e98f68d1f81e9f1843ab268e1d5575a49f0a68a6827b9e821bd09d4e4098` | 8,287 bytes | channel selector in the captured client |
+
+The public-asset classification used no credential, private identifier, account
+response, authentication message, or live mutation. The `current` labels in
+the section headings mean the client state captured on 2026-08-28; they do not
+mean that the assets remain available now.
+
+### Current `sendAuthCodeTrusted` request
+
+The trusted-phone branch in the captured client passes these callable `params`:
+
+- required on this client path: string `displayName`, string `phoneNumber`,
+  and boolean `silent`;
+- optional: string `channelPreference`, with captured values `SMS` or
+  `WHATSAPP`, and string `captchaToken`; the wrapper removes either member
+  when its value is `undefined`;
+- omitted: `eventId` and `useAppleBusinessUpdates`.
+
+The shared callable wrapper always constructs `data.params` and can add string
+`userId`, string `amplitudeDeviceId`, integer `amplitudeSessionId`, and
+boolean-true `adminAccessRequested` when available. An unavailable `userId`
+is omitted during JSON serialization. The wrapper's `deviceInfo` source is
+unset in this asset, and this call does not supply `deviceInfo`, so it is
+omitted. The Firebase callable SDK places this object under the one top-level
+`data` member.
+
+This evidence establishes the captured client request as of 2026-08-28, not
+server-side required-field validation or accepted values outside the captured
+projection.
+
+### Current `getLoginToken` request
+
+The verification flow in the captured client constructs callable `params` with
+required string `phoneNumber`, string `authCode`, and object `utms`. String
+`affiliateId` is optional and is omitted when its local-storage source is
+`undefined`. The same wrapper adds the optional metadata fields described
+above when available, removes undefined parameter members, omits
+`deviceInfo`, and places the request under the one top-level `data` member.
+
+This evidence establishes the captured client projection and omission
+behavior. It does not establish server-side required-field validation or the
+allowed contents of `utms`.
+
+### Current `signInWithCustomToken` request
+
+The bundled Firebase Auth client calls
+`/v1/accounts:signInWithCustomToken` with an application-JSON object that has
+required string `token` and required boolean `returnSecureToken: true`. It
+constructs no other JSON member for this call. The API-key query parameter
+remains redacted in this repository; the observed Referer restriction is
+documented separately below.
+
 ## Direct observations
 
 ### sendAuthCodeTrusted

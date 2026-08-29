@@ -12,7 +12,7 @@ func TestCurrentIsTheImmutableReviewedVersion(t *testing.T) {
 	want := version.Info{
 		CLIVersion:                "0.1.0",
 		CommandContractRevision:   "1",
-		TransportContractRevision: "2026-08-28.1",
+		TransportContractRevision: "2026-08-28.2",
 	}
 	if got := version.Current(); got != want {
 		t.Fatalf("Current() = %#v, want %#v", got, want)
