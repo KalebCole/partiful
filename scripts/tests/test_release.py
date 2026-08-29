@@ -183,7 +183,7 @@ class PublicationGateTest(unittest.TestCase):
             target_evidence={target.name: True for target in build_release.TARGETS},
             revision_match=True,
             contract_integrity=True,
-            worker_profiles=True,
+            worker_profile_attested=True,
             mcp_stdio_interop_gate="OPEN",
         )
         self.assertEqual(verify_release.publication_failures(packet), ["MCP16-STDIO-INTEROP is OPEN"])
@@ -193,7 +193,7 @@ class PublicationGateTest(unittest.TestCase):
             target_evidence={build_release.TARGETS[0].name: True},
             revision_match=False,
             contract_integrity=False,
-            worker_profiles=False,
+            worker_profile_attested=False,
             mcp_stdio_interop_gate="CLOSED",
         )
         self.assertEqual(
@@ -205,6 +205,37 @@ class PublicationGateTest(unittest.TestCase):
                 "worker-profile check failed",
             ],
         )
+
+    def test_worker_profile_status_requires_one_exact_success_for_the_candidate_sha(self) -> None:
+        revision = "a" * 40
+        def payload(statuses: list[dict[str, str]], sha: str = revision) -> dict[str, object]:
+            return {"sha": sha, "statuses": statuses}
+
+        expected = {"context": "partiful/live-worker-profiles", "state": "success"}
+        self.assertEqual(verify_release.worker_profile_status_failures(payload([expected]), revision), [])
+        cases = {
+            "absent": (payload([]), "worker-profile status is missing"),
+            "pending": (payload([{**expected, "state": "pending"}]), "worker-profile status is pending"),
+            "error": (payload([{**expected, "state": "error"}]), "worker-profile status is error"),
+            "failure": (payload([{**expected, "state": "failure"}]), "worker-profile status is failure"),
+            "wrong-context": (payload([{**expected, "context": "partiful/other"}]), "worker-profile status is missing"),
+            "wrong-sha": (payload([expected], "b" * 40), "worker-profile status SHA mismatch"),
+            "duplicate": (payload([expected, expected]), "worker-profile status is ambiguous"),
+            "malformed": ({"sha": revision, "statuses": "success"}, "invalid worker-profile status"),
+        }
+        for name, (status_payload, failure) in cases.items():
+            with self.subTest(case=name):
+                self.assertIn(failure, verify_release.worker_profile_status_failures(status_payload, revision))
+
+    def test_release_workflow_queries_native_status_for_the_build_revision_and_never_runs_live_profiles_hosted(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        build = workflow[workflow.index("build:"):workflow.index("native-smoke:")]
+        publish = workflow[workflow.index("publish:"):]
+        self.assertNotIn("verify_implementation_worker_profiles.py", build)
+        self.assertIn("REVISION: ${{ needs.build.outputs.revision }}", publish)
+        self.assertIn('"repos/${GITHUB_REPOSITORY}/commits/${REVISION}/status?per_page=100"', publish)
+        self.assertIn("--worker-profile-status-file", publish)
+        self.assertNotIn("--worker-profiles-passed", workflow)
 
     def test_checksum_manifest_matches_archives(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

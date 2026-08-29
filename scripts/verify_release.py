@@ -171,12 +171,35 @@ def smoke_native_archive(archive: Path, manifest_path: Path) -> None:
             drain_clean_shutdown(process, "SIGTERM", signal.SIGTERM)
 
 
+WORKER_PROFILE_STATUS_CONTEXT = "partiful/live-worker-profiles"
+
+
+def worker_profile_status_failures(payload: object, expected_revision: str) -> list[str]:
+    """Require one successful native GitHub status for the exact release SHA."""
+    if not isinstance(payload, dict):
+        return ["invalid worker-profile status"]
+    if payload.get("sha") != expected_revision:
+        return ["worker-profile status SHA mismatch"]
+    statuses = payload.get("statuses")
+    if not isinstance(statuses, list):
+        return ["invalid worker-profile status"]
+    matches = [status for status in statuses if isinstance(status, dict) and status.get("context") == WORKER_PROFILE_STATUS_CONTEXT]
+    if not matches:
+        return ["worker-profile status is missing"]
+    if len(matches) != 1:
+        return ["worker-profile status is ambiguous"]
+    state = matches[0].get("state")
+    if state != "success":
+        return [f"worker-profile status is {state}" if isinstance(state, str) else "invalid worker-profile status"]
+    return []
+
+
 @dataclass(frozen=True)
 class PublicationPacket:
     target_evidence: dict[str, bool]
     revision_match: bool
     contract_integrity: bool
-    worker_profiles: bool
+    worker_profile_attested: bool
     mcp_stdio_interop_gate: str
 
 
@@ -187,7 +210,7 @@ def publication_failures(packet: PublicationPacket) -> list[str]:
         failures.append("release revision mismatch")
     if not packet.contract_integrity:
         failures.append("contract-integrity check failed")
-    if not packet.worker_profiles:
+    if not packet.worker_profile_attested:
         failures.append("worker-profile check failed")
     if packet.mcp_stdio_interop_gate != "CLOSED":
         failures.append(f"MCP16-STDIO-INTEROP is {packet.mcp_stdio_interop_gate}")
@@ -361,14 +384,21 @@ def verify_release_directory(directory: Path, expected_revision: str | None = No
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-directory", type=Path, required=True)
-    parser.add_argument("--expected-revision")
+    parser.add_argument("--expected-revision", required=True)
     parser.add_argument("--contract-integrity-passed", action="store_true")
-    parser.add_argument("--worker-profiles-passed", action="store_true")
+    parser.add_argument("--worker-profile-status-file", type=Path, required=True)
     parser.add_argument("--mcp-stdio-interop-gate", required=True, choices=("OPEN", "CLOSED"))
     args = parser.parse_args()
     failures = verify_release_directory(args.release_directory, args.expected_revision)
+    try:
+        worker_profile_payload = json.loads(args.worker_profile_status_file.read_text())
+    except (OSError, json.JSONDecodeError):
+        worker_profile_failures = ["invalid worker-profile status"]
+    else:
+        worker_profile_failures = worker_profile_status_failures(worker_profile_payload, args.expected_revision)
+    failures.extend(worker_profile_failures)
     target_evidence = {target.name: not any(target.name in failure for failure in failures) for target in TARGETS}
-    failures.extend(publication_failures(PublicationPacket(target_evidence, not any(failure == "release revision mismatch" for failure in failures), args.contract_integrity_passed, args.worker_profiles_passed, args.mcp_stdio_interop_gate)))
+    failures.extend(publication_failures(PublicationPacket(target_evidence, not any(failure == "release revision mismatch" for failure in failures), args.contract_integrity_passed, not worker_profile_failures, args.mcp_stdio_interop_gate)))
     if failures:
         print(json.dumps(sorted(set(failures))), file=sys.stderr)
         return 1
